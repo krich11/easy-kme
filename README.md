@@ -19,8 +19,9 @@ Easy-KMS provides a streamlined approach to key management, offering both ease o
 ### Prerequisites
 
 - Python 3.8 or higher
-- PostgreSQL database
-- Required system dependencies (to be specified)
+- OpenSSL (version 1.1.1 or later)
+- Linux/Unix environment
+- Generated certificates (see [Certificate Authority Setup](README-CA.md))
 
 ### Installation
 
@@ -32,23 +33,31 @@ cd easy-kms
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure database
-# (Configuration instructions to be added)
+# Generate certificates (see README-CA.md)
+# Follow the certificate generation guide
+
+# Configure environment
+cp env.example .env
+# Edit .env with your configuration
 
 # Run the application
-python main.py
+python run.py
 ```
 
 ### Configuration
 
-Configuration details will be provided once the project structure is established.
+All configuration is handled through environment variables in the `.env` file. See [KME Server Configuration](README-KME.md) for detailed configuration options.
 
 ## Documentation
 
-- [User Guide](docs/user-guide.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Troubleshooting](docs/troubleshooting.md)
+### Setup and Configuration
+- [Certificate Authority Setup](README-CA.md) - Complete CA and certificate generation guide
+- [KME Server Configuration](README-KME.md) - Server setup, configuration, and operation
+- [SAE Client Integration](README-SAE-CERT.md) - SAE client certificate setup and integration
+
+### API Reference
+- [ETSI GS QKD 014 Specification](docs/gs_qkd014v010101p.txt) - Original ETSI specification
+- Interactive API Documentation - Available at `/docs` when server is running
 
 ## Contributing
 
@@ -62,8 +71,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support and questions:
 - Create an issue on GitHub
-- Check the [troubleshooting guide](docs/troubleshooting.md)
-- Review the [documentation](docs/)
+- Check the [KME Server Configuration](README-KME.md) troubleshooting section
+- Review the [SAE Client Integration](README-SAE-CERT.md) troubleshooting section
+- Verify certificate setup using [Certificate Authority Setup](README-CA.md)
 
 ## Roadmap
 
