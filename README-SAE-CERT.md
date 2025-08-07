@@ -46,54 +46,96 @@ easy-kme/
 
 ### Verify Certificate Chain
 
+Navigate to the Easy-KMS project directory:
+
 ```bash
-# Navigate to Easy-KMS directory
 cd /home/krich/src/easy-kme
-
-# Verify SAE1 certificate
-openssl verify -CAfile certs/ca/ca.crt certs/sae/sae1.crt
-
-# Verify SAE2 certificate
-openssl verify -CAfile certs/ca/ca.crt certs/sae/sae2.crt
-
-# Expected output: certs/sae/sae1.crt: OK
 ```
+
+**What this does:** Changes to the project directory where all certificates are stored.
+
+Verify that SAE1's certificate is properly signed by the CA:
+
+```bash
+openssl verify -CAfile certs/ca/ca.crt certs/sae/sae1.crt
+```
+
+**What this does:** Checks that SAE1's certificate was signed by our CA and is valid. Should return "certs/sae/sae1.crt: OK".
+
+Verify that SAE2's certificate is properly signed by the CA:
+
+```bash
+openssl verify -CAfile certs/ca/ca.crt certs/sae/sae2.crt
+```
+
+**What this does:** Checks that SAE2's certificate was signed by our CA and is valid. Should return "certs/sae/sae2.crt: OK".
 
 ### Check Certificate Details
 
+View the subject information from SAE1's certificate:
+
 ```bash
-# View SAE1 certificate details
 openssl x509 -in certs/sae/sae1.crt -text -noout | grep -A 5 "Subject:"
+```
 
-# View SAE2 certificate details
+**What this does:** Shows the identity information from SAE1's certificate, including the Common Name (CN) which should be "SAE_001".
+
+View the subject information from SAE2's certificate:
+
+```bash
 openssl x509 -in certs/sae/sae2.crt -text -noout | grep -A 5 "Subject:"
+```
 
-# Check certificate expiration
+**What this does:** Shows the identity information from SAE2's certificate, including the Common Name (CN) which should be "SAE_002".
+
+Check the validity period of SAE1's certificate:
+
+```bash
 openssl x509 -in certs/sae/sae1.crt -noout -dates
 ```
+
+**What this does:** Shows the certificate's validity period (notBefore and notAfter dates) to ensure it hasn't expired.
 
 ## File Permissions
 
 ### Set Proper Permissions
 
+Set restrictive permissions on the certificates directory:
+
 ```bash
-# Set directory permissions
 chmod 700 certs/
 chmod 700 certs/sae/
+```
 
-# Set private key permissions (restrictive)
+**What this does:** Ensures only the owner can access the certificate directories, protecting sensitive files.
+
+Set restrictive permissions on SAE private keys:
+
+```bash
 chmod 600 certs/sae/sae1.key
 chmod 600 certs/sae/sae2.key
+```
 
-# Set certificate permissions (readable)
+**What this does:** Makes private keys readable and writable only by the owner, preventing unauthorized access to the private keys.
+
+Set readable permissions on certificate files:
+
+```bash
 chmod 644 certs/sae/sae1.crt
 chmod 644 certs/sae/sae2.crt
 chmod 644 certs/ca/ca.crt
+```
 
-# Verify permissions
+**What this does:** Makes certificates readable by client applications while maintaining security.
+
+Verify that permissions are set correctly:
+
+```bash
 ls -la certs/sae/
 ls -la certs/ca/ca.crt
 ```
+
+**What this does:** Shows the file permissions to confirm they are set correctly (600 for private keys, 644 for certificates).
 
 ### Security Notes
 
@@ -107,43 +149,39 @@ ls -la certs/ca/ca.crt
 
 ### Basic Connectivity Test
 
+Test SAE1's connection to the KME server using its certificate for authentication:
+
 ```bash
-# Test SAE1 connection to KME server
 curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
   --cacert certs/ca/ca.crt \
   https://localhost:8443/health
-
-# Expected response: {"status": "healthy"}
 ```
+
+**What this does:** Authenticates SAE1 to the KME server using its certificate and private key, then requests the health status. The `--cacert` parameter provides the CA certificate for server verification.
 
 ### API Endpoint Testing
 
 #### 1. Get Status Test
 
+Test the status endpoint with SAE1's certificate:
+
 ```bash
-# Test status endpoint with SAE1
 curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
   --cacert certs/ca/ca.crt \
   https://localhost:8443/api/v1/keys/status
-
-# Expected response:
-# {
-#   "status": "operational",
-#   "kme_id": "KME_LAB_001",
-#   "version": "1.0.0",
-#   "key_pool_size": 850,
-#   "max_key_pool_size": 1000
-# }
 ```
+
+**What this does:** SAE1 authenticates to the KME server and requests the current status, including key pool information and server version.
 
 #### 2. Get Key Test (Master SAE)
 
+SAE1 acts as a Master SAE to request keys for SAE2:
+
 ```bash
-# SAE1 requests keys for SAE2 (Master SAE operation)
 curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
@@ -156,25 +194,15 @@ curl -k \
     "additional_slave_sae_ids": ["SAE_003"]
   }' \
   https://localhost:8443/api/v1/keys/SAE_002/enc_keys
-
-# Expected response:
-# {
-#   "keys": [
-#     {
-#       "key_id": "uuid-1234-5678-9abc-def0",
-#       "key_material": "base64-encoded-key-material",
-#       "key_size": 256
-#     }
-#   ],
-#   "key_number": 3,
-#   "key_size": 256
-# }
 ```
+
+**What this does:** SAE1 requests 3 keys of 256 bits each for SAE2, with an additional slave SAE (SAE_003) also authorized to access these keys. This demonstrates the Master SAE functionality.
 
 #### 3. Get Key with Key IDs Test (Slave SAE)
 
+SAE2 acts as a Slave SAE to retrieve keys using key IDs:
+
 ```bash
-# SAE2 retrieves keys using key IDs (Slave SAE operation)
 curl -k \
   --cert certs/sae/sae2.crt \
   --key certs/sae/sae2.key \
@@ -185,20 +213,9 @@ curl -k \
     "key_ids": ["uuid-1234-5678-9abc-def0", "uuid-5678-9abc-def0-1234"]
   }' \
   https://localhost:8443/api/v1/keys/SAE_001/dec_keys
-
-# Expected response:
-# {
-#   "keys": [
-#     {
-#       "key_id": "uuid-1234-5678-9abc-def0",
-#       "key_material": "base64-encoded-key-material",
-#       "key_size": 256
-#     }
-#   ],
-#   "key_number": 2,
-#   "key_size": 256
-# }
 ```
+
+**What this does:** SAE2 requests specific keys using their key IDs. The key IDs were provided by SAE1 (the Master SAE) in the previous step. This demonstrates the Slave SAE functionality.
 
 ## Client Integration Examples
 

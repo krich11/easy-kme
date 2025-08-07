@@ -36,34 +36,56 @@ easy-kme/
 
 ## Step 1: Create Certificate Directory Structure
 
+First, navigate to the Easy-KMS project directory:
+
 ```bash
-# Navigate to the Easy-KMS project directory
 cd /home/krich/src/easy-kme
+```
 
-# Create certificate directories
+Create the certificate directory structure. This organizes certificates by type (CA, KME, SAE):
+
+```bash
 mkdir -p certs/ca certs/kme certs/sae
+```
 
-# Set proper permissions
+Set restrictive permissions on all certificate directories. This ensures only the owner can access these directories:
+
+```bash
 chmod 700 certs
 chmod 700 certs/ca
 chmod 700 certs/kme
 chmod 700 certs/sae
 ```
 
+**What this does:** Creates a secure directory structure where:
+- `certs/ca/` stores the Certificate Authority files
+- `certs/kme/` stores the KME server certificates
+- `certs/sae/` stores the SAE client certificates
+- All directories have 700 permissions (owner read/write/execute only)
+
 ## Step 2: Generate CA Private Key
 
-```bash
-# Generate CA private key (RSA 4096 bits)
-openssl genrsa -out certs/ca/ca.key 4096
+Generate a 4096-bit RSA private key for the Certificate Authority. This is the root key that will be used to sign all other certificates:
 
-# Set restrictive permissions on CA private key
+```bash
+openssl genrsa -out certs/ca/ca.key 4096
+```
+
+**What this does:** Creates a cryptographically secure RSA private key with 4096 bits of entropy. This key will be used to sign all certificates in the PKI hierarchy.
+
+Set restrictive permissions on the CA private key. This is critical for security - only the owner should be able to read or write this file:
+
+```bash
 chmod 600 certs/ca/ca.key
 ```
 
+**What this does:** Sets file permissions to 600 (owner read/write only). This prevents other users from accessing the private key, which would compromise the entire certificate hierarchy.
+
 ## Step 3: Generate CA Certificate
 
+Create a configuration file for the CA certificate. This defines the certificate's identity and extensions:
+
 ```bash
-# Create CA certificate configuration
 cat > certs/ca/ca.conf << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -84,32 +106,65 @@ keyUsage = keyCertSign, cRLSign
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer:always
 EOF
+```
 
-# Generate CA certificate
+**What this does:** Creates a configuration file that defines:
+- The CA's identity (country, state, organization, etc.)
+- Certificate extensions that mark this as a CA certificate
+- Key usage constraints (can only sign other certificates)
+- Subject and authority key identifiers for certificate chaining
+
+Generate the CA certificate using the private key and configuration:
+
+```bash
 openssl req -new -x509 -days 3650 -key certs/ca/ca.key -out certs/ca/ca.crt -config certs/ca/ca.conf
+```
 
-# Set proper permissions on CA certificate
+**What this does:** Creates a self-signed CA certificate valid for 10 years (3650 days). This certificate will be used to verify all other certificates in the system.
+
+Set readable permissions on the CA certificate since it needs to be distributed to clients:
+
+```bash
 chmod 644 certs/ca/ca.crt
+```
 
-# Create serial number file
+**What this does:** Sets file permissions to 644 (owner read/write, group/others read). The CA certificate is public and needs to be readable by clients.
+
+Create a serial number file for certificate numbering:
+
+```bash
 echo "01" > certs/ca/ca.srl
 chmod 644 certs/ca/ca.srl
 ```
 
+**What this does:** Initializes the serial number counter starting at 01. Each certificate signed by this CA will get a unique serial number.
+
 ## Step 4: Verify CA Certificate
 
-```bash
-# Verify CA certificate
-openssl x509 -in certs/ca/ca.crt -text -noout
+Display the full certificate details to verify it was created correctly:
 
-# Check certificate details
+```bash
+openssl x509 -in certs/ca/ca.crt -text -noout
+```
+
+**What this does:** Shows the complete certificate including all extensions, validity periods, and key information. This helps verify the certificate was generated with the correct parameters.
+
+Check the essential certificate information (subject, issuer, and validity dates):
+
+```bash
 openssl x509 -in certs/ca/ca.crt -noout -subject -issuer -dates
 ```
 
+**What this does:** Displays a concise summary showing:
+- Subject: The CA's identity
+- Issuer: Should be the same as subject (self-signed)
+- Dates: Certificate validity period (notBefore and notAfter)
+
 ## Step 5: Create OpenSSL Configuration for Certificate Generation
 
+Create a comprehensive OpenSSL configuration file that will be used for generating all certificates:
+
 ```bash
-# Create main OpenSSL configuration
 cat > certs/openssl.conf << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -175,20 +230,39 @@ authorityKeyIdentifier = keyid,issuer
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth, emailProtection
 EOF
+```
 
-# Create CA index file
+**What this does:** Creates a master configuration file that defines:
+- Default certificate parameters (country, organization, etc.)
+- Certificate extensions for client and server authentication
+- Subject Alternative Names for localhost and local domains
+- CA configuration for signing certificates
+- Strict policy for certificate generation
+- Standard certificate extensions for end-entity certificates
+
+Create the CA database file to track issued certificates:
+
+```bash
 touch certs/ca/index.txt
 chmod 644 certs/ca/index.txt
 ```
 
+**What this does:** Creates an empty database file that OpenSSL will use to track all certificates issued by this CA. This is required for the CA operations.
+
 ## Step 6: Generate KME Server Certificate
 
+Generate a 2048-bit RSA private key for the KME server:
+
 ```bash
-# Generate KME private key
 openssl genrsa -out certs/kme/kme.key 2048
 chmod 600 certs/kme/kme.key
+```
 
-# Create KME certificate signing request
+**What this does:** Creates a private key for the KME server and sets restrictive permissions. The KME server will use this key for TLS connections.
+
+Create a configuration file specific to the KME server certificate:
+
+```bash
 cat > certs/kme/kme.conf << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -217,30 +291,61 @@ IP.1 = 127.0.0.1
 IP.2 = ::1
 IP.3 = 0.0.0.0
 EOF
+```
 
-# Generate KME certificate signing request
+**What this does:** Creates a configuration file that defines:
+- The KME server's identity (Common Name: KME_LAB_001)
+- Certificate extensions for server authentication
+- Subject Alternative Names for various ways to access the server
+
+Generate a Certificate Signing Request (CSR) for the KME server:
+
+```bash
 openssl req -new -key certs/kme/kme.key -out certs/kme/kme.csr -config certs/kme/kme.conf
+```
 
-# Sign KME certificate with CA
+**What this does:** Creates a CSR that contains the KME server's public key and identity information. This will be signed by the CA to create the final certificate.
+
+Sign the KME certificate using the CA:
+
+```bash
 openssl ca -batch -config certs/openssl.conf -in certs/kme/kme.csr -out certs/kme/kme.crt
+```
 
-# Set proper permissions
+**What this does:** Uses the CA to sign the KME server's CSR, creating a valid certificate that clients can trust.
+
+Set proper permissions on the KME certificate:
+
+```bash
 chmod 644 certs/kme/kme.crt
+```
 
-# Clean up CSR
+**What this does:** Makes the certificate readable by the KME server process while maintaining security.
+
+Remove the temporary CSR file:
+
+```bash
 rm certs/kme/kme.csr
 ```
+
+**What this does:** Cleans up the temporary CSR file since it's no longer needed after the certificate is signed.
 
 ## Step 7: Generate SAE Client Certificates
 
 ### Generate SAE1 Certificate
 
+Generate a 2048-bit RSA private key for SAE1:
+
 ```bash
-# Generate SAE1 private key
 openssl genrsa -out certs/sae/sae1.key 2048
 chmod 600 certs/sae/sae1.key
+```
 
-# Create SAE1 certificate signing request
+**What this does:** Creates a private key for SAE1 client and sets restrictive permissions. SAE1 will use this key for client authentication.
+
+Create a configuration file specific to SAE1:
+
+```bash
 cat > certs/sae/sae1.conf << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -267,28 +372,59 @@ DNS.2 = localhost
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOF
+```
 
-# Generate SAE1 certificate signing request
+**What this does:** Creates a configuration file that defines:
+- SAE1's identity (Common Name: SAE_001)
+- Certificate extensions for client authentication only
+- Subject Alternative Names for local access
+
+Generate a Certificate Signing Request for SAE1:
+
+```bash
 openssl req -new -key certs/sae/sae1.key -out certs/sae/sae1.csr -config certs/sae/sae1.conf
+```
 
-# Sign SAE1 certificate with CA
+**What this does:** Creates a CSR containing SAE1's public key and identity information.
+
+Sign SAE1's certificate using the CA:
+
+```bash
 openssl ca -batch -config certs/openssl.conf -in certs/sae/sae1.csr -out certs/sae/sae1.crt
+```
 
-# Set proper permissions
+**What this does:** Uses the CA to sign SAE1's CSR, creating a valid client certificate.
+
+Set proper permissions on SAE1's certificate:
+
+```bash
 chmod 644 certs/sae/sae1.crt
+```
 
-# Clean up CSR
+**What this does:** Makes the certificate readable by SAE1 client applications.
+
+Remove the temporary CSR file:
+
+```bash
 rm certs/sae/sae1.csr
 ```
 
+**What this does:** Cleans up the temporary CSR file.
+
 ### Generate SAE2 Certificate
 
+Generate a 2048-bit RSA private key for SAE2:
+
 ```bash
-# Generate SAE2 private key
 openssl genrsa -out certs/sae/sae2.key 2048
 chmod 600 certs/sae/sae2.key
+```
 
-# Create SAE2 certificate signing request
+**What this does:** Creates a private key for SAE2 client and sets restrictive permissions. SAE2 will use this key for client authentication.
+
+Create a configuration file specific to SAE2:
+
+```bash
 cat > certs/sae/sae2.conf << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -315,33 +451,74 @@ DNS.2 = localhost
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOF
+```
 
-# Generate SAE2 certificate signing request
+**What this does:** Creates a configuration file that defines:
+- SAE2's identity (Common Name: SAE_002)
+- Certificate extensions for client authentication only
+- Subject Alternative Names for local access
+
+Generate a Certificate Signing Request for SAE2:
+
+```bash
 openssl req -new -key certs/sae/sae2.key -out certs/sae/sae2.csr -config certs/sae/sae2.conf
+```
 
-# Sign SAE2 certificate with CA
+**What this does:** Creates a CSR containing SAE2's public key and identity information.
+
+Sign SAE2's certificate using the CA:
+
+```bash
 openssl ca -batch -config certs/openssl.conf -in certs/sae/sae2.csr -out certs/sae/sae2.crt
+```
 
-# Set proper permissions
+**What this does:** Uses the CA to sign SAE2's CSR, creating a valid client certificate.
+
+Set proper permissions on SAE2's certificate:
+
+```bash
 chmod 644 certs/sae/sae2.crt
+```
 
-# Clean up CSR
+**What this does:** Makes the certificate readable by SAE2 client applications.
+
+Remove the temporary CSR file:
+
+```bash
 rm certs/sae/sae2.csr
 ```
 
+**What this does:** Cleans up the temporary CSR file.
+
 ## Step 8: Verify Certificates
 
+Verify that the KME certificate is properly signed by the CA:
+
 ```bash
-# Verify KME certificate
 openssl verify -CAfile certs/ca/ca.crt certs/kme/kme.crt
+```
 
-# Verify SAE1 certificate
+**What this does:** Checks that the KME certificate was signed by our CA and is valid. Should return "certs/kme/kme.crt: OK".
+
+Verify that SAE1's certificate is properly signed by the CA:
+
+```bash
 openssl verify -CAfile certs/ca/ca.crt certs/sae/sae1.crt
+```
 
-# Verify SAE2 certificate
+**What this does:** Checks that SAE1's certificate was signed by our CA and is valid. Should return "certs/sae/sae1.crt: OK".
+
+Verify that SAE2's certificate is properly signed by the CA:
+
+```bash
 openssl verify -CAfile certs/ca/ca.crt certs/sae/sae2.crt
+```
 
-# Check certificate details
+**What this does:** Checks that SAE2's certificate was signed by our CA and is valid. Should return "certs/sae/sae2.crt: OK".
+
+Display the subject information for each certificate to verify their identities:
+
+```bash
 echo "=== KME Certificate ==="
 openssl x509 -in certs/kme/kme.crt -text -noout | grep -A 5 "Subject:"
 
@@ -352,34 +529,64 @@ echo "=== SAE2 Certificate ==="
 openssl x509 -in certs/sae/sae2.crt -text -noout | grep -A 5 "Subject:"
 ```
 
+**What this does:** Shows the subject (identity) of each certificate to confirm they have the correct Common Names (KME_LAB_001, SAE_001, SAE_002).
+
 ## Step 9: Create Certificate Bundle for Easy-KMS
 
+Create symbolic links that point to the actual certificate files. This allows the Easy-KMS server to use standardized paths:
+
 ```bash
-# Create symbolic links for Easy-KMS configuration
 ln -sf certs/kme/kme.crt certs/kme_cert.pem
 ln -sf certs/kme/kme.key certs/kme_key.pem
 ln -sf certs/ca/ca.crt certs/ca_cert.pem
+```
 
-# Set proper permissions on symlinks
+**What this does:** Creates symbolic links that the Easy-KMS server expects:
+- `certs/kme_cert.pem` → points to the KME server certificate
+- `certs/kme_key.pem` → points to the KME server private key
+- `certs/ca_cert.pem` → points to the CA certificate
+
+Set proper permissions on the symbolic links:
+
+```bash
 chmod 644 certs/kme_cert.pem
 chmod 644 certs/ca_cert.pem
 chmod 600 certs/kme_key.pem
 ```
 
+**What this does:** Ensures the symbolic links have the correct permissions:
+- Certificates (644): readable by the server process
+- Private key (600): only readable by the owner
+
 ## Step 10: Final Security Check
 
+Verify that all directories have the correct permissions:
+
 ```bash
-# Verify directory permissions
 ls -la certs/
 ls -la certs/ca/
 ls -la certs/kme/
 ls -la certs/sae/
+```
 
-# Verify file permissions
+**What this does:** Shows the permissions on all certificate directories. They should all show `drwx------` (700 permissions).
+
+Check that all private key files have restrictive permissions:
+
+```bash
 find certs/ -name "*.key" -exec ls -la {} \;
+```
+
+**What this does:** Lists all private key files and their permissions. They should all show `-rw-------` (600 permissions).
+
+Check that all certificate files have readable permissions:
+
+```bash
 find certs/ -name "*.crt" -exec ls -la {} \;
 find certs/ -name "*.pem" -exec ls -la {} \;
 ```
+
+**What this does:** Lists all certificate files and their permissions. They should show `-rw-r--r--` (644 permissions).
 
 ## Certificate Locations Summary
 

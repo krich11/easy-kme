@@ -21,18 +21,38 @@ The Easy-KMS server implements the ETSI GS QKD 014 Key Management Entity (KME) w
 
 ### Step 1: Clone and Setup
 
+Clone the Easy-KMS repository to your local machine:
+
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/easy-kms.git
 cd easy-kms
+```
 
-# Create virtual environment
+**What this does:** Downloads the Easy-KMS source code and navigates to the project directory.
+
+Create a Python virtual environment to isolate the project dependencies:
+
+```bash
 python3 -m venv venv
-source venv/bin/activate
+```
 
-# Install dependencies
+**What this does:** Creates a new virtual environment named "venv" that will contain all the Python packages for this project.
+
+Activate the virtual environment:
+
+```bash
+source venv/bin/activate
+```
+
+**What this does:** Activates the virtual environment, making it the active Python environment. You'll see "(venv)" in your prompt.
+
+Install the required Python packages:
+
+```bash
 pip install -r requirements.txt
 ```
+
+**What this does:** Installs all the dependencies listed in requirements.txt, including FastAPI, cryptography, and other required packages.
 
 ### Step 2: Certificate Setup
 
@@ -44,13 +64,21 @@ Follow the instructions in `README-CA.md` to generate the required certificates:
 
 ### Step 3: Environment Configuration
 
-```bash
-# Copy environment template
-cp env.example .env
+Copy the environment template file to create your configuration:
 
-# Edit configuration
+```bash
+cp env.example .env
+```
+
+**What this does:** Creates a local `.env` file with default configuration values that you can customize.
+
+Edit the environment configuration file with your specific settings:
+
+```bash
 nano .env
 ```
+
+**What this does:** Opens the `.env` file in a text editor where you can modify settings like KME ID, certificate paths, and server configuration.
 
 ## Configuration
 
@@ -127,20 +155,33 @@ easy-kme/
 
 ### Development Mode
 
-```bash
-# Activate virtual environment
-source venv/bin/activate
+Activate the Python virtual environment:
 
-# Run server
+```bash
+source venv/bin/activate
+```
+
+**What this does:** Ensures you're using the correct Python environment with all the required dependencies installed.
+
+Run the KME server in development mode:
+
+```bash
 python run.py
 ```
 
+**What this does:** Starts the Easy-KMS server using the configuration in your `.env` file. The server will listen on the configured host and port with mTLS enabled.
+
 ### Production Mode
 
+Create a systemd service file for automatic startup:
+
 ```bash
-# Create systemd service (optional)
 sudo nano /etc/systemd/system/easy-kms.service
 ```
+
+**What this does:** Opens a text editor to create a systemd service file that will manage the Easy-KMS server as a system service.
+
+Add the following content to the service file:
 
 ```ini
 [Unit]
@@ -160,12 +201,35 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
+**What this does:** Defines a systemd service that:
+- Runs the KME server as user "krich"
+- Automatically restarts if it crashes
+- Starts after the network is available
+- Starts automatically on boot
+
+Enable the service to start automatically on boot:
+
 ```bash
-# Enable and start service
 sudo systemctl enable easy-kms
+```
+
+**What this does:** Configures the service to start automatically when the system boots.
+
+Start the Easy-KMS service:
+
+```bash
 sudo systemctl start easy-kms
+```
+
+**What this does:** Starts the KME server as a system service.
+
+Check the service status:
+
+```bash
 sudo systemctl status easy-kms
 ```
+
+**What this does:** Shows the current status of the Easy-KMS service, including whether it's running and any recent log messages.
 
 ## API Endpoints
 
@@ -247,10 +311,13 @@ POST /api/v1/keys/{master_sae_id}/dec_keys
 
 ### Health Check
 
+Test basic connectivity to the KME server (without client certificate authentication):
+
 ```bash
-# Test basic connectivity (without mTLS)
 curl -k https://localhost:8443/health
 ```
+
+**What this does:** Sends a simple HTTPS request to the health endpoint. The `-k` flag skips certificate verification for this basic connectivity test.
 
 ### API Documentation
 
@@ -260,15 +327,21 @@ Access the interactive API documentation:
 
 ### Certificate Testing
 
+Test the status endpoint using SAE1's certificate for authentication:
+
 ```bash
-# Test with SAE1 certificate
 curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
   --cacert certs/ca/ca.crt \
   https://localhost:8443/api/v1/keys/status
+```
 
-# Test key generation (Master SAE)
+**What this does:** Authenticates as SAE1 using its certificate and private key, then requests the KME server status. The `--cacert` parameter provides the CA certificate for server verification.
+
+Test key generation by having SAE1 act as a Master SAE requesting keys for SAE2:
+
+```bash
 curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
@@ -279,58 +352,139 @@ curl -k \
   https://localhost:8443/api/v1/keys/SAE_002/enc_keys
 ```
 
+**What this does:** SAE1 requests 2 keys of 256 bits each for SAE2. This demonstrates the Master SAE functionality where one SAE can request keys on behalf of another.
+
 ## Monitoring and Logging
 
 ### Log Files
 
-```bash
-# View server logs
-tail -f logs/kme.log
+Monitor the KME server logs in real-time:
 
-# View system logs (if using systemd)
+```bash
+tail -f logs/kme.log
+```
+
+**What this does:** Shows the most recent log entries and continues to display new log messages as they are written. This is useful for monitoring server activity.
+
+View system logs if running as a systemd service:
+
+```bash
 sudo journalctl -u easy-kms -f
 ```
 
+**What this does:** Shows systemd journal logs for the Easy-KMS service. The `-f` flag follows the logs in real-time, similar to `tail -f`.
+
 ### Key Pool Monitoring
 
+Check the current status of the key pool:
+
 ```bash
-# Check key pool status
 cat data/key_pool.json
+```
 
-# Check registered SAEs
+**What this does:** Displays the key pool configuration and current status, including the number of available keys and pool size.
+
+View the registry of all registered SAE clients:
+
+```bash
 cat data/sae_registry.json
+```
 
-# Check active sessions
+**What this does:** Shows all SAE clients that have connected to the KME server, including their certificate information and registration timestamps.
+
+Check active key distribution sessions:
+
+```bash
 cat data/sessions.json
 ```
 
+**What this does:** Displays all active sessions where keys have been distributed between master and slave SAEs.
+
 ### Performance Monitoring
 
+Check if the Easy-KMS server process is running:
+
 ```bash
-# Monitor server process
 ps aux | grep easy-kms
+```
 
-# Monitor network connections
+**What this does:** Shows all running processes that match "easy-kms", including the main server process and any related processes.
+
+Monitor network connections on the KME server port:
+
+```bash
 netstat -tlnp | grep 8443
+```
 
-# Monitor disk usage
+**What this does:** Shows all active network connections on port 8443, including which processes are using those connections.
+
+Check disk usage of the data directory:
+
+```bash
 du -sh data/
 ```
+
+**What this does:** Shows the total disk space used by the data directory, which contains keys, sessions, and SAE registry information.
 
 ## Security Considerations
 
 ### File Permissions
 
+Set restrictive permissions on the certificates directory:
+
 ```bash
-# Set proper permissions
 chmod 700 certs/
+```
+
+**What this does:** Ensures only the owner can access the certificates directory, protecting sensitive certificate files.
+
+Set restrictive permissions on the KME private key:
+
+```bash
 chmod 600 certs/kme_key.pem
+```
+
+**What this does:** Makes the private key readable and writable only by the owner, preventing unauthorized access.
+
+Set readable permissions on certificate files:
+
+```bash
 chmod 644 certs/kme_cert.pem certs/ca_cert.pem
+```
+
+**What this does:** Makes certificates readable by the server process while maintaining security.
+
+Set restrictive permissions on the data directory:
+
+```bash
 chmod 700 data/
+```
+
+**What this does:** Protects the data directory containing keys and session information.
+
+Set restrictive permissions on data files:
+
+```bash
 chmod 600 data/*.json
+```
+
+**What this does:** Protects sensitive data files containing keys and SAE information.
+
+Set appropriate permissions on the logs directory:
+
+```bash
 chmod 755 logs/
+```
+
+**What this does:** Allows the server to write logs while making them readable by the owner.
+
+Set appropriate permissions on the log file:
+
+```bash
 chmod 644 logs/kme.log
 ```
+
+**What this does:** Makes the log file readable by the server process and owner.
 
 ### Network Security
 
