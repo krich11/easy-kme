@@ -172,7 +172,7 @@ curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
   --cacert certs/ca/ca.crt \
-  https://localhost:8443/api/v1/keys/status
+  https://localhost:8443/api/v1/keys/SAE_002/status
 ```
 
 **What this does:** SAE1 authenticates to the KME server and requests the current status, including key pool information and server version.
@@ -247,7 +247,7 @@ class SAEClient:
     
     def get_status(self):
         """Get KME status."""
-        response = self.session.get(f"{self.kme_url}/api/v1/keys/status")
+        response = self.session.get(f"{self.kme_url}/api/v1/keys/{slave_sae_id}/status")
         response.raise_for_status()
         return response.json()
     
@@ -370,7 +370,7 @@ echo -e "${YELLOW}Testing SAE1 as Master SAE...${NC}"
 
 # Get status
 echo "Getting KME status..."
-status=$(make_request "$SAE1_CERT" "$SAE1_KEY" "GET" "/api/v1/keys/status")
+status=$(make_request "$SAE1_CERT" "$SAE1_KEY" "GET" "/api/v1/keys/SAE_002/status")
 echo -e "${GREEN}Status: $status${NC}"
 
 # Request keys for SAE2
@@ -500,7 +500,7 @@ curl -v -k \
     --cert certs/sae/sae1.crt \
     --key certs/sae/sae1.key \
     --cacert certs/ca/ca.crt \
-    https://localhost:8443/api/v1/keys/status
+    https://localhost:8443/api/v1/keys/SAE_002/status
 
 # Enable SSL debug
 export SSLKEYLOGFILE=/tmp/ssl.log

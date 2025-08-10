@@ -237,7 +237,7 @@ The Easy-KMS server implements three ETSI GS QKD 014 endpoints:
 
 ### 1. Get Status
 ```
-GET /api/v1/keys/status
+GET /api/v1/keys/{slave_SAE_ID}/status
 ```
 
 **Response:**
@@ -334,7 +334,7 @@ curl -k \
   --cert certs/sae/sae1.crt \
   --key certs/sae/sae1.key \
   --cacert certs/ca/ca.crt \
-  https://localhost:8443/api/v1/keys/status
+  https://localhost:8443/api/v1/keys/SAE_002/status
 ```
 
 **What this does:** Authenticates as SAE1 using its certificate and private key, then requests the KME server status. The `--cacert` parameter provides the CA certificate for server verification.

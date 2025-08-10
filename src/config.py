@@ -1,75 +1,73 @@
 """
 Configuration management for Easy-KMS server.
-Loads all settings from environment variables with validation.
+Simple environment-backed settings with validation (no external dependencies).
 """
 
 import os
 from pathlib import Path
-from typing import Optional
-from pydantic import BaseSettings, validator
 
 
-class Settings(BaseSettings):
+class Settings:
     """Application settings loaded from environment variables."""
     
-    # KME Server Configuration
-    kme_host: str = "0.0.0.0"
-    kme_port: int = 8443
-    kme_id: str = "KME_LAB_001"
+    def __init__(self):
+        # KME Server Configuration
+        self.kme_host: str = os.getenv("KME_HOST", "0.0.0.0")
+        self.kme_port: int = int(os.getenv("KME_PORT", "8443"))
+        self.kme_id: str = os.getenv("KME_ID", "KME_LAB_001")
     
-    # Certificate Configuration
-    kme_cert_path: str = "./certs/kme_cert.pem"
-    kme_key_path: str = "./certs/kme_key.pem"
-    ca_cert_path: str = "./certs/ca_cert.pem"
+        # Certificate Configuration
+        self.kme_cert_path: str = os.getenv("KME_CERT_PATH", "./certs/kme_cert.pem")
+        self.kme_key_path: str = os.getenv("KME_KEY_PATH", "./certs/kme_key.pem")
+        self.ca_cert_path: str = os.getenv("CA_CERT_PATH", "./certs/ca_cert.pem")
     
-    # Storage Configuration
-    data_dir: str = "./data"
-    key_pool_size: int = 1000
-    key_size: int = 256
+        # Storage Configuration
+        self.data_dir: str = os.getenv("DATA_DIR", "./data")
+        self.key_pool_size: int = int(os.getenv("KEY_POOL_SIZE", "1000"))
+        self.key_size: int = int(os.getenv("KEY_SIZE", "256"))
     
-    # Security Settings
-    require_client_cert: bool = True
-    verify_ca: bool = True
+        # Security Settings
+        self.require_client_cert: bool = os.getenv("REQUIRE_CLIENT_CERT", "true").lower() == "true"
+        self.verify_ca: bool = os.getenv("VERIFY_CA", "true").lower() == "true"
+        self.allow_header_auth: bool = os.getenv("ALLOW_HEADER_AUTH", "false").lower() == "true"
     
-    # Logging Configuration
-    log_level: str = "INFO"
-    log_file: str = "./logs/kme.log"
+        # Logging Configuration
+        self.log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
+        self.log_file: str = os.getenv("LOG_FILE", "./logs/kme.log")
     
-    # API Configuration
-    api_version: str = "v1"
-    api_prefix: str = "/api"
+        # API Configuration
+        self.api_version: str = os.getenv("API_VERSION", "v1")
+        self.api_prefix: str = os.getenv("API_PREFIX", "/api")
+
+        # Spec-related limits
+        self.max_key_per_request: int = int(os.getenv("KEY_MAX_PER_REQUEST", "128"))
+        self.key_max_size: int = int(os.getenv("KEY_MAX_SIZE", "1024"))
+        self.key_min_size: int = int(os.getenv("KEY_MIN_SIZE", "8"))
+        self.max_sae_id_count: int = int(os.getenv("MAX_SAE_ID_COUNT", "8"))
     
-    @validator('kme_cert_path', 'kme_key_path', 'ca_cert_path')
-    def validate_cert_paths(cls, v):
-        """Validate certificate file paths exist."""
-        if not Path(v).exists():
-            raise ValueError(f"Certificate file not found: {v}")
-        return v
-    
-    @validator('data_dir')
-    def validate_data_dir(cls, v):
-        """Ensure data directory exists."""
-        Path(v).mkdir(parents=True, exist_ok=True)
-        return v
-    
-    @validator('log_level')
-    def validate_log_level(cls, v):
-        """Validate log level."""
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-        if v.upper() not in valid_levels:
-            raise ValueError(f"Invalid log level: {v}")
-        return v.upper()
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+        # Validate and normalize
+        self._validate()
+
+    def _validate(self):
+        # Validate log level
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if self.log_level not in valid_levels:
+            raise ValueError(f"Invalid log level: {self.log_level}")
+
+        # Ensure data dir exists
+        Path(self.data_dir).mkdir(parents=True, exist_ok=True)
+
+        # Validate cert files exist
+        for path in (self.kme_cert_path, self.kme_key_path, self.ca_cert_path):
+            p = Path(path)
+            if not (p.exists() or p.is_symlink()):
+                raise ValueError(f"Certificate file not found: {path}")
 
 
-# Global settings instance
-settings = Settings()
+from functools import lru_cache
 
 
+@lru_cache
 def get_settings() -> Settings:
-    """Get the global settings instance."""
-    return settings 
+    """Create and cache the Settings instance."""
+    return Settings()

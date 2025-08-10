@@ -90,6 +90,20 @@ class KeyService:
                                 key_request: KeyRequest) -> Optional[KeyContainer]:
         """Get keys for master SAE (Get key API)."""
         try:
+            # Validate request (lab: strict input acceptance per ETSI simple rules)
+            if key_request.size is not None and key_request.size % 8 != 0:
+                logger.error("size shall be a multiple of 8")
+                return None
+            if key_request.number is not None and key_request.number > self.settings.max_key_per_request:
+                logger.error("number exceeds max_key_per_request")
+                return None
+            if key_request.size is not None and (key_request.size < self.settings.key_min_size or key_request.size > self.settings.key_max_size):
+                logger.error("size outside allowed bounds")
+                return None
+            if key_request.additional_slave_sae_ids and len(key_request.additional_slave_sae_ids) > self.settings.max_sae_id_count:
+                logger.error("additional_slave_SAE_IDs exceeds max_SAE_ID_count")
+                return None
+
             # Ensure key pool is sufficiently full
             self.refill_key_pool()
             
@@ -102,7 +116,7 @@ class KeyService:
                 return None
             
             # Select keys for this request
-            selected_keys = available_keys[:key_request.number]
+            selected_keys = available_keys[: key_request.number or 1]
             
             # Mark keys as used and assign to master SAE
             for key in selected_keys:
@@ -142,7 +156,7 @@ class KeyService:
             key_container = KeyContainer(
                 keys=api_keys,
                 key_number=len(api_keys),
-                key_size=key_request.size
+                key_size=key_request.size or self.settings.key_size
             )
             
             logger.info(f"Generated {len(selected_keys)} keys for master SAE {master_sae_id}")
@@ -202,8 +216,11 @@ class KeyService:
             logger.error(f"Error getting keys for slave SAE {slave_sae_id}: {e}")
             return None
     
-    def get_status(self) -> dict:
-        """Get KME status information."""
+    def get_status(self, master_sae_id: str | None = None, slave_sae_id: str | None = None) -> dict:
+        """Get KME status information.
+
+        Parameters are placeholders to align with ETSI 'Get status' semantics.
+        """
         try:
             key_pool = self.storage_service.get_key_pool()
             keys = self.storage_service.get_keys()

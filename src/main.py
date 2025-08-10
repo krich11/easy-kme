@@ -1,16 +1,20 @@
 """
-Main FastAPI application for Easy-KMS server.
+Easy-KMS Server - ETSI GS QKD 014 Key Management Entity
+Main application entry point.
 """
 
-import ssl
 import logging
-from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from fastapi import Request
 
 from .config import get_settings
 from .api.routes import router
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -45,11 +49,8 @@ app.include_router(router)
 async def startup_event():
     """Application startup event."""
     settings = get_settings()
-    logger.info(f"Starting Easy-KMS server on {settings.kme_host}:{settings.kme_port}")
+    logger.info(f"Starting Easy-KMS server on {settings.kme_host}:8000")
     logger.info(f"KME ID: {settings.kme_id}")
-    logger.info(f"Certificate path: {settings.kme_cert_path}")
-    logger.info(f"Key path: {settings.kme_key_path}")
-    logger.info(f"CA certificate path: {settings.ca_cert_path}")
 
 
 @app.on_event("shutdown")
@@ -70,50 +71,113 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
-
-
-def create_ssl_context() -> ssl.SSLContext:
-    """Create SSL context for mTLS."""
+async def health_check(request: Request):
+    """Health check endpoint with client certificate information."""
+    from cryptography import x509
+    from cryptography.hazmat.backends import default_backend
+    import base64
+    
     settings = get_settings()
     
-    # Create SSL context
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.verify_mode = ssl.CERT_REQUIRED
-    ssl_context.check_hostname = False
+    # Debug logging - show all headers
+    logger.info("=== Health Check Debug ===")
+    logger.info(f"All headers: {dict(request.headers)}")
     
-    # Load server certificate and key
-    ssl_context.load_cert_chain(
-        certfile=settings.kme_cert_path,
-        keyfile=settings.kme_key_path
-    )
+    # Initialize certificate info
+    cert_info = {
+        "status": "healthy",
+        "server": "FastAPI with nginx mTLS termination",
+        "client_certificate": None,
+        "debug": {
+            "all_headers": dict(request.headers),
+            "nginx_headers": {}
+        }
+    }
     
-    # Load CA certificate for client verification
-    ssl_context.load_verify_locations(cafile=settings.ca_cert_path)
+    # Extract client certificate from nginx headers
+    client_cert_pem = request.headers.get("X-Client-Certificate")
+    client_verified = request.headers.get("X-Client-Verified")
+    client_dn = request.headers.get("X-Client-DN")
     
-    return ssl_context
+    # Debug logging for nginx headers
+    logger.info(f"X-Client-Certificate: {'FOUND' if client_cert_pem else 'NOT FOUND'}")
+    logger.info(f"X-Client-Verified: {client_verified}")
+    logger.info(f"X-Client-DN: {client_dn}")
+    
+    # Store debug info
+    cert_info["debug"]["nginx_headers"] = {
+        "X-Client-Certificate": "FOUND" if client_cert_pem else "NOT FOUND",
+        "X-Client-Verified": client_verified,
+        "X-Client-DN": client_dn
+    }
+    
+    if client_cert_pem:
+        logger.info("Certificate found in nginx headers, parsing...")
+        try:
+            # Parse the certificate
+            cert = x509.load_pem_x509_certificate(
+                client_cert_pem.encode('utf-8'), 
+                default_backend()
+            )
+            
+            logger.info("Certificate parsed successfully")
+            
+            # Extract salient characteristics
+            cert_info["client_certificate"] = {
+                "subject": {
+                    "common_name": cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME) else None,
+                    "organization": cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME) else None,
+                    "organizational_unit": cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME) else None,
+                    "country": cert.subject.get_attributes_for_oid(x509.NameOID.COUNTRY_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.COUNTRY_NAME) else None,
+                    "state": cert.subject.get_attributes_for_oid(x509.NameOID.STATE_OR_PROVINCE_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.STATE_OR_PROVINCE_NAME) else None,
+                    "locality": cert.subject.get_attributes_for_oid(x509.NameOID.LOCALITY_NAME)[0].value if cert.subject.get_attributes_for_oid(x509.NameOID.LOCALITY_NAME) else None,
+                },
+                "issuer": {
+                    "common_name": cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value if cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME) else None,
+                    "organization": cert.issuer.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value if cert.issuer.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME) else None,
+                },
+                "serial_number": str(cert.serial_number),
+                "not_valid_before": cert.not_valid_before.isoformat(),
+                "not_valid_after": cert.not_valid_after.isoformat(),
+                "signature_algorithm": cert.signature_algorithm_oid._name,
+                "public_key_algorithm": cert.public_key_algorithm._name,
+                "version": cert.version.value,
+                "nginx_verified": client_verified,
+                "nginx_dn": client_dn
+            }
+            
+            logger.info(f"Certificate subject: {cert_info['client_certificate']['subject']}")
+            
+        except Exception as e:
+            logger.error(f"Failed to parse certificate: {e}")
+            cert_info["client_certificate"] = {
+                "error": f"Failed to parse certificate: {str(e)}",
+                "raw_pem": client_cert_pem[:100] + "..." if len(client_cert_pem) > 100 else client_cert_pem
+            }
+    else:
+        logger.warning("No certificate found in nginx headers")
+        cert_info["client_certificate"] = {
+            "status": "no_certificate_provided",
+            "nginx_verified": client_verified,
+            "nginx_dn": client_dn
+        }
+    
+    logger.info("=== End Health Check Debug ===")
+    return cert_info
 
 
 def run_server():
-    """Run the KME server with mTLS support."""
+    """Run the KME server with HTTP (nginx handles SSL)."""
     settings = get_settings()
     
-    # Create SSL context
-    ssl_context = create_ssl_context()
+    logger.info("Starting Easy-KMS server with HTTP (nginx handles mTLS)...")
     
-    # Configure uvicorn
+    # Run with uvicorn on HTTP (nginx handles SSL)
     uvicorn.run(
-        "src.main:app",
+        app,
         host=settings.kme_host,
-        port=settings.kme_port,
-        ssl_keyfile=settings.kme_key_path,
-        ssl_certfile=settings.kme_cert_path,
-        ssl_ca_certs=settings.ca_cert_path,
-        ssl_verify_mode=ssl.CERT_REQUIRED,
-        reload=False,  # Set to True for development
-        log_level=settings.log_level.lower()
+        port=8000,  # Fixed port for nginx upstream
+        log_level="info"
     )
 
 

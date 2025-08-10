@@ -171,3 +171,34 @@ class AuthService:
         except Exception as e:
             logger.error(f"Error checking SAE authorization: {e}")
             return False 
+
+    def is_slave_authorized_for_keys(self, slave_sae_id: str, key_ids: list, master_sae_id: str) -> bool:
+        """Check slave-only authorization for dec_keys per ETSI GS QKD 014.
+
+        The requester must be a slave SAE listed on the corresponding keys, and
+        the provided master_sae_id must match the key's master.
+        """
+        try:
+            keys = self.storage_service.get_keys()
+
+            for key_id in key_ids:
+                key = next((k for k in keys if k.key_id == key_id), None)
+                if not key:
+                    logger.warning(f"Key {key_id} not found")
+                    return False
+
+                if key.master_sae_id != master_sae_id:
+                    logger.warning(
+                        f"Key {key_id} master mismatch: expected {master_sae_id}, got {key.master_sae_id}"
+                    )
+                    return False
+
+                if slave_sae_id not in key.slave_sae_ids:
+                    logger.warning(f"Slave SAE {slave_sae_id} not authorized for key {key_id}")
+                    return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error checking slave authorization: {e}")
+            return False
