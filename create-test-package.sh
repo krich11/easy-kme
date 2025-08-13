@@ -12,7 +12,7 @@ ARCHIVE_NAME="${PACKAGE_NAME}-${TIMESTAMP}.tar.gz"
 
 echo "Creating test package: $ARCHIVE_NAME"
 
-# Create tar.gz with necessary files
+# Create tar.gz with test files only
 tar -czf "$ARCHIVE_NAME" \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
@@ -22,16 +22,8 @@ tar -czf "$ARCHIVE_NAME" \
     --exclude='.pytest_cache' \
     test_kme_api.sh \
     certs/ \
-    src/ \
-    requirements.txt \
-    env.example \
-    nginx.conf \
-    start_kme.sh \
-    setup_nginx.sh \
     TESTING.md \
-    ETSI_WORKFLOW.md \
-    data/ \
-    tests/
+    ETSI_WORKFLOW.md
 
 echo "Package created: $ARCHIVE_NAME"
 echo "Size: $(du -h "$ARCHIVE_NAME" | cut -f1)"
