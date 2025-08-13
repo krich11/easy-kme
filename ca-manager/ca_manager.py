@@ -200,9 +200,17 @@ class CAManager:
         
         cert_info['email'] = input(f"Email [{default_email}]: ").strip() or default_email
         
-        # Key size (fixed at 2048 for KME and SAE)
-        cert_info['key_size'] = 2048
-        print(f"RSA Key Size: 2048 (fixed for {cert_type} certificates)")
+        # Key size (default 2048 for KME and SAE, but configurable)
+        while True:
+            try:
+                key_size = input("RSA Key Size [2048]: ").strip() or "2048"
+                cert_info['key_size'] = int(key_size)
+                if cert_info['key_size'] not in [2048, 4096]:
+                    print("Key size must be 2048 or 4096")
+                    continue
+                break
+            except ValueError:
+                print("Please enter a valid number")
         
         # Validity period (default 5 years)
         while True:
@@ -310,10 +318,13 @@ class CAManager:
         ).sign(private_key, hashes.SHA256(), default_backend())
         
         # Load CA private key and certificate
-        with open(self.ca_config['ca_key_path'], 'rb') as f:
+        ca_key_path = self.ca_dir / "private" / "ca.key"
+        ca_cert_path = self.ca_dir / "ca.crt"
+        
+        with open(ca_key_path, 'rb') as f:
             ca_private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
         
-        with open(self.ca_config['ca_cert_path'], 'rb') as f:
+        with open(ca_cert_path, 'rb') as f:
             ca_cert = x509.load_pem_x509_certificate(f.read(), default_backend())
         
         # Create certificate
