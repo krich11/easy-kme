@@ -203,10 +203,20 @@ class CAManager:
         print(f"\n=== {cert_type} Certificate Information ===")
         cert_info = {}
         
-        cert_info['country'] = input("Country (2-letter code) [US]: ").strip() or "US"
-        cert_info['state'] = input("State/Province [TX]: ").strip() or "TX"
-        cert_info['locality'] = input("City/Locality [Houston]: ").strip() or "Houston"
-        cert_info['organization'] = input("Organization [Easy-KMS]: ").strip() or "Easy-KMS"
+        # Get CA info for defaults
+        ca_info = self.ca_config.get('ca_info', {})
+        
+        # Use CA values as defaults
+        default_country = ca_info.get('country', 'US')
+        default_state = ca_info.get('state', 'TX')
+        default_locality = ca_info.get('locality', 'Houston')
+        default_organization = ca_info.get('organization', 'Easy-KMS')
+        default_email = ca_info.get('email', 'admin@easy-kms.com')
+        
+        cert_info['country'] = input(f"Country (2-letter code) [{default_country}]: ").strip() or default_country
+        cert_info['state'] = input(f"State/Province [{default_state}]: ").strip() or default_state
+        cert_info['locality'] = input(f"City/Locality [{default_locality}]: ").strip() or default_locality
+        cert_info['organization'] = input(f"Organization [{default_organization}]: ").strip() or default_organization
         
         if cert_type == "KME":
             cert_info['organizational_unit'] = input("Organizational Unit [KME]: ").strip() or "KME"
@@ -215,12 +225,15 @@ class CAManager:
             cert_info['organizational_unit'] = input("Organizational Unit [SAE]: ").strip() or "SAE"
             cert_info['common_name'] = input("Common Name [SAE_001]: ").strip() or "SAE_001"
         
-        cert_info['email'] = input("Email [admin@easy-kms.com]: ").strip() or "admin@easy-kms.com"
+        cert_info['email'] = input(f"Email [{default_email}]: ").strip() or default_email
         
-        # Key size
+        # Key size (use CA key size as default, but limit to 4096 for certificates)
+        ca_key_size = ca_info.get('key_size', 2048)
+        default_key_size = min(ca_key_size, 4096)  # Limit to 4096 for certificates
+        
         while True:
             try:
-                key_size = input("RSA Key Size [2048]: ").strip() or "2048"
+                key_size = input(f"RSA Key Size [{default_key_size}]: ").strip() or str(default_key_size)
                 cert_info['key_size'] = int(key_size)
                 if cert_info['key_size'] not in [2048, 4096]:
                     print("Key size must be 2048 or 4096")
@@ -229,10 +242,13 @@ class CAManager:
             except ValueError:
                 print("Please enter a valid number")
         
-        # Validity period
+        # Validity period (use CA validity as default, but limit to 20 years for certificates)
+        ca_validity = ca_info.get('validity_years', 5)
+        default_validity = min(ca_validity, 20)  # Limit to 20 years for certificates
+        
         while True:
             try:
-                validity_years = input("Validity Period (years) [5]: ").strip() or "5"
+                validity_years = input(f"Validity Period (years) [{default_validity}]: ").strip() or str(default_validity)
                 cert_info['validity_years'] = int(validity_years)
                 if cert_info['validity_years'] < 1 or cert_info['validity_years'] > 20:
                     print("Validity must be between 1 and 20 years")
