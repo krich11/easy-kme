@@ -220,12 +220,12 @@ class CAManager:
         cert_info['organization'] = input(f"Organization [{default_organization}]: ").strip() or default_organization
         
         if cert_type == "KME":
-            cert_info['organizational_unit'] = input(f"Organizational Unit [KME]: ").strip() or "KME"
+            cert_info['organizational_unit'] = input(f"Organizational Unit [{default_organizational_unit}]: ").strip() or default_organizational_unit
             # Auto-increment KME name
             default_kme_name = self.get_next_cert_name("KME")
             cert_info['common_name'] = input(f"Common Name [{default_kme_name}]: ").strip() or default_kme_name
         else:  # SAE
-            cert_info['organizational_unit'] = input(f"Organizational Unit [SAE]: ").strip() or "SAE"
+            cert_info['organizational_unit'] = input(f"Organizational Unit [{default_organizational_unit}]: ").strip() or default_organizational_unit
             # Auto-increment SAE name
             default_sae_name = self.get_next_cert_name("SAE")
             cert_info['common_name'] = input(f"Common Name [{default_sae_name}]: ").strip() or default_sae_name
