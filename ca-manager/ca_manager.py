@@ -6,7 +6,6 @@ Standalone Certificate Authority management application
 
 import os
 import sys
-import json
 import shutil
 import subprocess
 from datetime import datetime, timedelta
@@ -23,27 +22,6 @@ class CAManager:
     def __init__(self):
         self.ca_dir = Path("ca")
         self.certs_dir = Path("certs")
-        self.config_file = Path("ca_config.json")
-        self.ca_config = self.load_config()
-        
-    def load_config(self):
-        """Load CA configuration from file"""
-        if self.config_file.exists():
-            try:
-                with open(self.config_file, 'r') as f:
-                    return json.load(f)
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                return {}
-        return {}
-    
-    def save_config(self):
-        """Save CA configuration to file"""
-        try:
-            with open(self.config_file, 'w') as f:
-                json.dump(self.ca_config, f, indent=2)
-        except Exception as e:
-            print(f"Error saving config: {e}")
     
     def create_directories(self):
         """Create necessary directories"""
@@ -93,7 +71,7 @@ class CAManager:
     
     def create_ca(self):
         """Create Certificate Authority"""
-        if self.ca_config.get('ca_created'):
+        if (self.ca_dir / "ca.crt").exists():
             print("CA already exists. Use 'Reset CA' option to recreate.")
             return
         
@@ -184,16 +162,6 @@ class CAManager:
         os.chmod(key_path, 0o600)
         os.chmod(cert_path, 0o644)
         
-        # Save configuration
-        self.ca_config.update({
-            'ca_created': True,
-            'ca_info': ca_info,
-            'ca_key_path': str(key_path),
-            'ca_cert_path': str(cert_path),
-            'created_date': datetime.now().isoformat()
-        })
-        self.save_config()
-        
         print(f"✅ CA created successfully!")
         print(f"   Private key: {key_path}")
         print(f"   Certificate: {cert_path}")
@@ -203,8 +171,8 @@ class CAManager:
         print(f"\n=== {cert_type} Certificate Information ===")
         cert_info = {}
         
-        # Get CA info for defaults
-        ca_info = self.ca_config.get('ca_info', {})
+        # Get CA info from certificate file
+        ca_info = self.get_ca_info()
         
         # Use CA values as defaults
         default_country = ca_info.get('country', 'US')
@@ -250,23 +218,55 @@ class CAManager:
         
         return cert_info
     
+    def get_ca_info(self):
+        """Get CA information from the certificate file"""
+        ca_cert_path = self.ca_dir / "ca.crt"
+        if not ca_cert_path.exists():
+            return {}
+        
+        try:
+            with open(ca_cert_path, 'rb') as f:
+                cert = x509.load_pem_x509_certificate(f.read(), default_backend())
+            
+            ca_info = {}
+            for attr in cert.subject:
+                if attr.oid == NameOID.COUNTRY_NAME:
+                    ca_info['country'] = attr.value
+                elif attr.oid == NameOID.STATE_OR_PROVINCE_NAME:
+                    ca_info['state'] = attr.value
+                elif attr.oid == NameOID.LOCALITY_NAME:
+                    ca_info['locality'] = attr.value
+                elif attr.oid == NameOID.ORGANIZATION_NAME:
+                    ca_info['organization'] = attr.value
+                elif attr.oid == NameOID.ORGANIZATIONAL_UNIT_NAME:
+                    ca_info['organizational_unit'] = attr.value
+                elif attr.oid == NameOID.COMMON_NAME:
+                    ca_info['common_name'] = attr.value
+                elif attr.oid == NameOID.EMAIL_ADDRESS:
+                    ca_info['email'] = attr.value
+            
+            return ca_info
+        except Exception as e:
+            print(f"Error reading CA certificate: {e}")
+            return {}
+    
     def get_next_cert_name(self, cert_type):
         """Get the next available certificate name for the given type"""
-        if not self.ca_config.get('certificates'):
+        cert_dir = self.certs_dir / cert_type.lower()
+        if not cert_dir.exists():
             return f"{cert_type}_001"
         
         # Find existing certificates of this type
         existing_names = []
-        for cert_id, cert_data in self.ca_config['certificates'].items():
-            if cert_data['type'] == cert_type:
-                common_name = cert_data['info']['common_name']
-                if common_name.startswith(f"{cert_type}_"):
-                    try:
-                        # Extract number from name like "KME_001"
-                        number = int(common_name.split('_')[1])
-                        existing_names.append(number)
-                    except (IndexError, ValueError):
-                        pass
+        for cert_file in cert_dir.glob("*.crt"):
+            cert_name = cert_file.stem  # filename without extension
+            if cert_name.startswith(f"{cert_type.lower()}_"):
+                try:
+                    # Extract number from name like "kme_001"
+                    number = int(cert_name.split('_')[1])
+                    existing_names.append(number)
+                except (IndexError, ValueError):
+                    pass
         
         if not existing_names:
             return f"{cert_type}_001"
@@ -277,7 +277,7 @@ class CAManager:
     
     def create_certificate(self, cert_type):
         """Create KME or SAE certificate"""
-        if not self.ca_config.get('ca_created'):
+        if not (self.ca_dir / "ca.crt").exists():
             print("CA must be created first!")
             return
         
@@ -378,45 +378,58 @@ class CAManager:
         os.chmod(key_path, 0o600)
         os.chmod(cert_path, 0o644)
         
-        # Save certificate info
-        cert_id = f"{cert_type.lower()}_{cert_info['common_name']}"
-        if 'certificates' not in self.ca_config:
-            self.ca_config['certificates'] = {}
-        
-        self.ca_config['certificates'][cert_id] = {
-            'type': cert_type,
-            'info': cert_info,
-            'key_path': str(key_path),
-            'cert_path': str(cert_path),
-            'created_date': datetime.now().isoformat()
-        }
-        self.save_config()
-        
         print(f"✅ {cert_type} certificate created successfully!")
         print(f"   Private key: {key_path}")
         print(f"   Certificate: {cert_path}")
     
     def export_p12(self):
         """Export certificate as password-protected P12 file"""
-        if not self.ca_config.get('certificates'):
+        # Find all certificates
+        certs = []
+        
+        # Check KME certificates
+        kme_dir = self.certs_dir / "kme"
+        if kme_dir.exists():
+            for cert_file in kme_dir.glob("*.crt"):
+                key_file = kme_dir / f"{cert_file.stem}.key"
+                if key_file.exists():
+                    certs.append({
+                        'name': cert_file.stem,
+                        'type': 'KME',
+                        'cert_path': str(cert_file),
+                        'key_path': str(key_file)
+                    })
+        
+        # Check SAE certificates
+        sae_dir = self.certs_dir / "sae"
+        if sae_dir.exists():
+            for cert_file in sae_dir.glob("*.crt"):
+                key_file = sae_dir / f"{cert_file.stem}.key"
+                if key_file.exists():
+                    certs.append({
+                        'name': cert_file.stem,
+                        'type': 'SAE',
+                        'cert_path': str(cert_file),
+                        'key_path': str(key_file)
+                    })
+        
+        if not certs:
             print("No certificates to export!")
             return
         
         print("\n=== Export Certificate as P12 ===")
         
         # List available certificates
-        certs = self.ca_config['certificates']
         print("Available certificates:")
-        for i, (cert_id, cert_data) in enumerate(certs.items(), 1):
-            print(f"  {i}. {cert_id} ({cert_data['type']})")
+        for i, cert_data in enumerate(certs, 1):
+            print(f"  {i}. {cert_data['name']} ({cert_data['type']})")
         
         # Select certificate
         while True:
             try:
                 choice = int(input(f"\nSelect certificate (1-{len(certs)}): "))
                 if 1 <= choice <= len(certs):
-                    cert_id = list(certs.keys())[choice - 1]
-                    cert_data = certs[cert_id]
+                    cert_data = certs[choice - 1]
                     break
                 else:
                     print("Invalid selection")
@@ -424,7 +437,7 @@ class CAManager:
                 print("Please enter a valid number")
         
         # Get export filename
-        default_filename = f"{cert_id}.p12"
+        default_filename = f"{cert_data['name']}.p12"
         filename = input(f"Export filename [{default_filename}]: ").strip() or default_filename
         
         # Get password
@@ -455,23 +468,34 @@ class CAManager:
         """List all certificates"""
         print("\n=== Certificate List ===")
         
-        if self.ca_config.get('ca_created'):
+        # Check CA
+        ca_cert_path = self.ca_dir / "ca.crt"
+        if ca_cert_path.exists():
+            ca_info = self.get_ca_info()
             print("Certificate Authority:")
-            print(f"  Common Name: {self.ca_config['ca_info']['common_name']}")
-            print(f"  Organization: {self.ca_config['ca_info']['organization']}")
-            print(f"  Created: {self.ca_config['created_date']}")
+            print(f"  Common Name: {ca_info.get('common_name', 'Unknown')}")
+            print(f"  Organization: {ca_info.get('organization', 'Unknown')}")
             print()
         
-        if self.ca_config.get('certificates'):
-            print("Certificates:")
-            for cert_id, cert_data in self.ca_config['certificates'].items():
-                print(f"  {cert_id}:")
-                print(f"    Type: {cert_data['type']}")
-                print(f"    Common Name: {cert_data['info']['common_name']}")
-                print(f"    Organization: {cert_data['info']['organization']}")
-                print(f"    Created: {cert_data['created_date']}")
-                print()
-        else:
+        # Check KME certificates
+        kme_dir = self.certs_dir / "kme"
+        if kme_dir.exists() and list(kme_dir.glob("*.crt")):
+            print("KME Certificates:")
+            for cert_file in kme_dir.glob("*.crt"):
+                print(f"  {cert_file.stem}")
+            print()
+        
+        # Check SAE certificates
+        sae_dir = self.certs_dir / "sae"
+        if sae_dir.exists() and list(sae_dir.glob("*.crt")):
+            print("SAE Certificates:")
+            for cert_file in sae_dir.glob("*.crt"):
+                print(f"  {cert_file.stem}")
+            print()
+        
+        if not (ca_cert_path.exists() or 
+                (kme_dir.exists() and list(kme_dir.glob("*.crt"))) or 
+                (sae_dir.exists() and list(sae_dir.glob("*.crt")))):
             print("No certificates created yet.")
     
     def reset_ca(self):
@@ -487,14 +511,6 @@ class CAManager:
             shutil.rmtree(self.ca_dir)
         if self.certs_dir.exists():
             shutil.rmtree(self.certs_dir)
-        
-        # Remove config
-        if self.config_file.exists():
-            self.config_file.unlink()
-        
-        # Reset config
-        self.ca_config = {}
-        self.save_config()
         
         print("✅ CA and all certificates reset.")
     
