@@ -211,6 +211,7 @@ class CAManager:
         default_state = ca_info.get('state', 'TX')
         default_locality = ca_info.get('locality', 'Houston')
         default_organization = ca_info.get('organization', 'Easy-KMS')
+        default_organizational_unit = ca_info.get('organizational_unit', 'Easy-KMS')
         default_email = ca_info.get('email', 'admin@easy-kms.com')
         
         cert_info['country'] = input(f"Country (2-letter code) [{default_country}]: ").strip() or default_country
@@ -219,36 +220,26 @@ class CAManager:
         cert_info['organization'] = input(f"Organization [{default_organization}]: ").strip() or default_organization
         
         if cert_type == "KME":
-            cert_info['organizational_unit'] = input("Organizational Unit [KME]: ").strip() or "KME"
-            cert_info['common_name'] = input("Common Name [KME_001]: ").strip() or "KME_001"
+            cert_info['organizational_unit'] = input(f"Organizational Unit [KME]: ").strip() or "KME"
+            # Auto-increment KME name
+            default_kme_name = self.get_next_cert_name("KME")
+            cert_info['common_name'] = input(f"Common Name [{default_kme_name}]: ").strip() or default_kme_name
         else:  # SAE
-            cert_info['organizational_unit'] = input("Organizational Unit [SAE]: ").strip() or "SAE"
-            cert_info['common_name'] = input("Common Name [SAE_001]: ").strip() or "SAE_001"
+            cert_info['organizational_unit'] = input(f"Organizational Unit [SAE]: ").strip() or "SAE"
+            # Auto-increment SAE name
+            default_sae_name = self.get_next_cert_name("SAE")
+            cert_info['common_name'] = input(f"Common Name [{default_sae_name}]: ").strip() or default_sae_name
         
         cert_info['email'] = input(f"Email [{default_email}]: ").strip() or default_email
         
-        # Key size (use CA key size as default, but limit to 4096 for certificates)
-        ca_key_size = ca_info.get('key_size', 2048)
-        default_key_size = min(ca_key_size, 4096)  # Limit to 4096 for certificates
+        # Key size (fixed at 2048 for KME and SAE)
+        cert_info['key_size'] = 2048
+        print(f"RSA Key Size: 2048 (fixed for {cert_type} certificates)")
         
+        # Validity period (default 5 years)
         while True:
             try:
-                key_size = input(f"RSA Key Size [{default_key_size}]: ").strip() or str(default_key_size)
-                cert_info['key_size'] = int(key_size)
-                if cert_info['key_size'] not in [2048, 4096]:
-                    print("Key size must be 2048 or 4096")
-                    continue
-                break
-            except ValueError:
-                print("Please enter a valid number")
-        
-        # Validity period (use CA validity as default, but limit to 20 years for certificates)
-        ca_validity = ca_info.get('validity_years', 5)
-        default_validity = min(ca_validity, 20)  # Limit to 20 years for certificates
-        
-        while True:
-            try:
-                validity_years = input(f"Validity Period (years) [{default_validity}]: ").strip() or str(default_validity)
+                validity_years = input("Validity Period (years) [5]: ").strip() or "5"
                 cert_info['validity_years'] = int(validity_years)
                 if cert_info['validity_years'] < 1 or cert_info['validity_years'] > 20:
                     print("Validity must be between 1 and 20 years")
@@ -258,6 +249,31 @@ class CAManager:
                 print("Please enter a valid number")
         
         return cert_info
+    
+    def get_next_cert_name(self, cert_type):
+        """Get the next available certificate name for the given type"""
+        if not self.ca_config.get('certificates'):
+            return f"{cert_type}_001"
+        
+        # Find existing certificates of this type
+        existing_names = []
+        for cert_id, cert_data in self.ca_config['certificates'].items():
+            if cert_data['type'] == cert_type:
+                common_name = cert_data['info']['common_name']
+                if common_name.startswith(f"{cert_type}_"):
+                    try:
+                        # Extract number from name like "KME_001"
+                        number = int(common_name.split('_')[1])
+                        existing_names.append(number)
+                    except (IndexError, ValueError):
+                        pass
+        
+        if not existing_names:
+            return f"{cert_type}_001"
+        
+        # Find the next available number
+        next_number = max(existing_names) + 1
+        return f"{cert_type}_{next_number:03d}"
     
     def create_certificate(self, cert_type):
         """Create KME or SAE certificate"""
