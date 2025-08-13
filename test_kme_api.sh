@@ -15,8 +15,41 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
+# Default values - can be overridden by command line arguments
 KME_HOST="localhost"
 KME_PORT="8443"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --host)
+            KME_HOST="$2"
+            shift 2
+            ;;
+        --port)
+            KME_PORT="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--host HOST] [--port PORT]"
+            echo "  --host HOST    Target KME server hostname/IP (default: localhost)"
+            echo "  --port PORT    Target KME server port (default: 8443)"
+            echo "  --help, -h     Show this help message"
+            echo
+            echo "Examples:"
+            echo "  $0                    # Test localhost:8443"
+            echo "  $0 --host 192.168.1.100 --port 8443"
+            echo "  $0 --host kme.example.com"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 BASE_URL="https://${KME_HOST}:${KME_PORT}"
 CERT_DIR="./certs"
 SAE1_CERT="${CERT_DIR}/sae/sae1.crt"
@@ -102,6 +135,10 @@ api_call() {
 
 # Function to check if server is running
 check_server() {
+    print_info "Target KME Server: ${KME_HOST}:${KME_PORT}"
+    print_info "Base URL: ${BASE_URL}"
+    echo
+    
     print_info "Checking if KME server is running..."
     if curl -k -s "${BASE_URL}/health" >/dev/null 2>&1; then
         print_success "KME server is running"

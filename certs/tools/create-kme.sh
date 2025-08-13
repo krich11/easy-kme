@@ -109,6 +109,6 @@ openssl ca -batch -config certs/openssl.conf -in certs/kme/kme.csr -out certs/km
 chmod 644 certs/kme/kme.crt
 rm certs/kme/kme.csr
 
-ln -sf certs/kme/kme.crt certs/kme_cert.pem
-ln -sf certs/kme/kme.key certs/kme_key.pem
+ln -sf ./kme/kme.crt certs/kme_cert.pem
+ln -sf ./kme/kme.key certs/kme_key.pem
 

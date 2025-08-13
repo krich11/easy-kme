@@ -32,5 +32,5 @@ echo "01" > certs/ca/ca.srl
 openssl x509 -in certs/ca/ca.crt -text -noout
 openssl x509 -in certs/ca/ca.crt -noout -subject -issuer -dates
 
-ln -sf certs/ca/ca.crt certs/ca_cert.pem
+ln -sf ./ca/ca.crt certs/ca_cert.pem
 
