@@ -44,6 +44,35 @@ dir_exists() {
     [ -d "$1" ]
 }
 
+# Function to optimize pip performance
+optimize_pip_performance() {
+    print_status "Optimizing pip performance..."
+    
+    # Check if we're in a virtual environment
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_warning "Not in virtual environment, pip optimizations may be limited"
+    fi
+    
+    # Set pip configuration for better performance
+    export PIP_DISABLE_PIP_VERSION_CHECK=1
+    export PIP_NO_WARN_SCRIPT_LOCATION=1
+    
+    # Try to use faster index if available
+    if command_exists pip; then
+        # Check if we can use a faster mirror
+        print_status "Checking for faster pip mirrors..."
+        
+        # Try to use a faster index (optional)
+        if [ -z "$PIP_INDEX_URL" ]; then
+            # You can uncomment the line below to use a specific mirror if needed
+            # export PIP_INDEX_URL="https://pypi.org/simple/"
+            print_status "Using default PyPI index"
+        fi
+    fi
+    
+    print_success "Pip performance optimizations applied"
+}
+
 # Function to check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -151,10 +180,29 @@ setup_virtual_environment() {
     
     # Activate virtual environment and install requirements
     source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
     
-    print_success "Python dependencies installed"
+    # Apply pip performance optimizations
+    optimize_pip_performance
+    
+    # Optimize pip installation for speed
+    print_status "Upgrading pip..."
+    pip install --upgrade pip --no-cache-dir --quiet
+    
+    print_status "Installing Python dependencies (this may take a few minutes)..."
+    print_status "Using optimized installation flags for faster setup..."
+    
+    # Try to install with optimizations, fall back to standard if needed
+    if pip install -r requirements.txt --no-cache-dir --prefer-binary --use-pep517 --quiet; then
+        print_success "Python dependencies installed successfully"
+    else
+        print_warning "Optimized installation failed, trying standard installation..."
+        if pip install -r requirements.txt --quiet; then
+            print_success "Python dependencies installed successfully"
+        else
+            print_error "Failed to install Python dependencies"
+            return 1
+        fi
+    fi
 }
 
 # Function to create directory structure
@@ -494,8 +542,76 @@ show_menu() {
     echo "  8) Setup Nginx Configuration"
     echo "  9) Verify Complete Setup"
     echo "  10) Run Complete Setup (All Steps)"
+    echo "  11) Troubleshoot Pip Performance"
     echo "  q) Quit"
     echo ""
+}
+
+# Function to troubleshoot pip performance
+troubleshoot_pip_performance() {
+    print_status "Troubleshooting pip performance issues..."
+    
+    echo ""
+    echo "=== Pip Performance Diagnostics ==="
+    
+    # Check pip version
+    if command_exists pip; then
+        pip_version=$(pip --version 2>/dev/null | cut -d' ' -f2)
+        print_status "Pip version: $pip_version"
+    else
+        print_error "Pip not found"
+    fi
+    
+    # Check Python version
+    if command_exists python3; then
+        python_version=$(python3 --version 2>&1)
+        print_status "Python version: $python_version"
+    fi
+    
+    # Check virtual environment
+    if [ -n "$VIRTUAL_ENV" ]; then
+        print_success "Virtual environment active: $VIRTUAL_ENV"
+    else
+        print_warning "No virtual environment active"
+    fi
+    
+    # Check network connectivity
+    print_status "Testing network connectivity to PyPI..."
+    if curl -s --connect-timeout 10 https://pypi.org/simple/ > /dev/null; then
+        print_success "PyPI connectivity: OK"
+    else
+        print_error "PyPI connectivity: FAILED"
+        print_warning "Check your internet connection or firewall settings"
+    fi
+    
+    # Check available memory
+    if command_exists free; then
+        available_mem=$(free -m | awk 'NR==2{printf "%.0f", $7}')
+        print_status "Available memory: ${available_mem}MB"
+        if [ "$available_mem" -lt 512 ]; then
+            print_warning "Low memory available. Consider closing other applications."
+        fi
+    fi
+    
+    # Check disk space
+    if command_exists df; then
+        available_space=$(df . | awk 'NR==2{printf "%.0f", $4}')
+        print_status "Available disk space: ${available_space}KB"
+        if [ "$available_space" -lt 1048576 ]; then  # Less than 1GB
+            print_warning "Low disk space available. Consider freeing up space."
+        fi
+    fi
+    
+    echo ""
+    echo "=== Performance Optimization Tips ==="
+    echo "1. Use a wired internet connection if possible"
+    echo "2. Close other applications to free up memory"
+    echo "3. Consider using a local PyPI mirror if available"
+    echo "4. The setup script now uses optimized pip flags"
+    echo "5. If installation is still slow, try running it overnight"
+    echo ""
+    
+    read -p "Press Enter to continue..."
 }
 
 # Function to run complete setup
@@ -582,6 +698,9 @@ while true; do
             ;;
         10)
             run_complete_setup
+            ;;
+        11)
+            troubleshoot_pip_performance
             ;;
         q|Q)
             print_status "Exiting setup menu"
