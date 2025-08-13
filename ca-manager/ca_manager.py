@@ -509,7 +509,7 @@ class CAManager:
         print("4. Export P12 Certificate")
         print("5. List Certificates")
         print("6. Reset CA")
-        print("0. Exit")
+        print("q. Exit")
         print("="*50)
     
     def run(self):
@@ -518,7 +518,7 @@ class CAManager:
             self.show_menu()
             choice = input("\nSelect option: ").strip()
             
-            if choice == '0':
+            if choice == 'q':
                 print("Goodbye!")
                 break
             elif choice == '1':
