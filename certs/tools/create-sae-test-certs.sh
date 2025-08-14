@@ -25,7 +25,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 CN = SAE_001
 
 [v3_req]
@@ -52,7 +52,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 CN = SAE_002
 
 [v3_req]
@@ -79,7 +79,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 CN = SAE_003
 
 [v3_req]
@@ -106,7 +106,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 CN = SAE_004
 
 [v3_req]
