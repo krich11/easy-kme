@@ -227,6 +227,20 @@ create_directory_structure() {
     print_success "Directory structure created with proper permissions"
 }
 
+# Function to get existing value from .env file
+get_existing_env_value() {
+    local var_name="$1"
+    local env_file="$2"
+    
+    if [ -f "$env_file" ]; then
+        # Extract the value from the .env file, handling comments and empty lines
+        local existing_value=$(grep "^${var_name}=" "$env_file" | head -1 | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+        if [ -n "$existing_value" ]; then
+            echo "$existing_value"
+        fi
+    fi
+}
+
 # Function to prompt for environment variable with default
 prompt_env_var() {
     local var_name="$1"
@@ -234,6 +248,19 @@ prompt_env_var() {
     local description="$3"
     local validation_func="$4"
     local options="$5"
+    local env_file="$6"
+    
+    # Try to get existing value from .env file
+    local existing_value=""
+    if [ -n "$env_file" ] && [ -f "$env_file" ]; then
+        existing_value=$(get_existing_env_value "$var_name" "$env_file")
+    fi
+    
+    # Use existing value as default if available, otherwise use provided default
+    local effective_default="$default_value"
+    if [ -n "$existing_value" ]; then
+        effective_default="$existing_value"
+    fi
     
     echo "" >&2
     print_status "$description" >&2
@@ -243,12 +270,17 @@ prompt_env_var() {
         echo "Options: $options" >&2
     fi
     
+    # Show if we're using an existing value
+    if [ -n "$existing_value" ]; then
+        echo "Current value from .env: $existing_value" >&2
+    fi
+    
     while true; do
-        read -p "Enter value for $var_name [$default_value]: " user_value
+        read -p "Enter value for $var_name [$effective_default]: " user_value
         
         # Use default if user just pressed Enter
         if [ -z "$user_value" ]; then
-            user_value="$default_value"
+            user_value="$effective_default"
         fi
         
         # Validate if validation function is provided
@@ -340,42 +372,42 @@ create_env_file() {
     
     # KME Server Configuration
     echo "# KME Server Configuration" >> "$temp_env_file"
-    prompt_env_var "KME_HOST" "0.0.0.0" "KME server host address (0.0.0.0 for all interfaces)" >> "$temp_env_file"
-    prompt_env_var "KME_PORT" "8443" "KME server port number" "validate_port" "1-65535" >> "$temp_env_file"
-    prompt_env_var "KME_ID" "KME_LAB_001" "KME server identifier" >> "$temp_env_file"
+    prompt_env_var "KME_HOST" "0.0.0.0" "KME server host address (0.0.0.0 for all interfaces)" "" "" ".env" >> "$temp_env_file"
+    prompt_env_var "KME_PORT" "8443" "KME server port number" "validate_port" "1-65535" ".env" >> "$temp_env_file"
+    prompt_env_var "KME_ID" "KME_LAB_001" "KME server identifier" "" "" ".env" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Certificate Configuration
     echo "# Certificate Configuration" >> "$temp_env_file"
-    prompt_env_var "KME_CERT_PATH" "./certs/kme/kme.crt" "Path to KME certificate file" >> "$temp_env_file"
-    prompt_env_var "KME_KEY_PATH" "./certs/kme/kme.key" "Path to KME private key file" >> "$temp_env_file"
-    prompt_env_var "CA_CERT_PATH" "./certs/ca/ca.crt" "Path to CA certificate file" >> "$temp_env_file"
+    prompt_env_var "KME_CERT_PATH" "./certs/kme/kme.crt" "Path to KME certificate file" "" "" ".env" >> "$temp_env_file"
+    prompt_env_var "KME_KEY_PATH" "./certs/kme/kme.key" "Path to KME private key file" "" "" ".env" >> "$temp_env_file"
+    prompt_env_var "CA_CERT_PATH" "./certs/ca/ca.crt" "Path to CA certificate file" "" "" ".env" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Storage Configuration
     echo "# Storage Configuration" >> "$temp_env_file"
-    prompt_env_var "DATA_DIR" "./data" "Directory for storing key data" >> "$temp_env_file"
-    prompt_env_var "KEY_POOL_SIZE" "1000" "Number of keys to maintain in pool" "validate_positive_int" >> "$temp_env_file"
-    prompt_env_var "KEY_SIZE" "256" "Size of generated keys in bits" "validate_positive_int" "128, 256, 512, 1024, 2048" >> "$temp_env_file"
+    prompt_env_var "DATA_DIR" "./data" "Directory for storing key data" "" "" ".env" >> "$temp_env_file"
+    prompt_env_var "KEY_POOL_SIZE" "1000" "Number of keys to maintain in pool" "validate_positive_int" "" ".env" >> "$temp_env_file"
+    prompt_env_var "KEY_SIZE" "256" "Size of generated keys in bits" "validate_positive_int" "128, 256, 512, 1024, 2048" ".env" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Security Settings
     echo "# Security Settings" >> "$temp_env_file"
-    prompt_env_var "REQUIRE_CLIENT_CERT" "true" "Require client certificates for authentication" "validate_boolean" "true, false" >> "$temp_env_file"
-    prompt_env_var "VERIFY_CA" "true" "Verify CA certificate" "validate_boolean" "true, false" >> "$temp_env_file"
-    prompt_env_var "ALLOW_HEADER_AUTH" "false" "Allow header-based authentication" "validate_boolean" "true, false" >> "$temp_env_file"
+    prompt_env_var "REQUIRE_CLIENT_CERT" "true" "Require client certificates for authentication" "validate_boolean" "true, false" ".env" >> "$temp_env_file"
+    prompt_env_var "VERIFY_CA" "true" "Verify CA certificate" "validate_boolean" "true, false" ".env" >> "$temp_env_file"
+    prompt_env_var "ALLOW_HEADER_AUTH" "false" "Allow header-based authentication" "validate_boolean" "true, false" ".env" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Logging Configuration
     echo "# Logging Configuration" >> "$temp_env_file"
-    prompt_env_var "LOG_LEVEL" "INFO" "Logging level" "validate_log_level" "DEBUG, INFO, WARNING, ERROR, CRITICAL" >> "$temp_env_file"
-    prompt_env_var "LOG_FILE" "./logs/kme.log" "Path to log file" >> "$temp_env_file"
+    prompt_env_var "LOG_LEVEL" "INFO" "Logging level" "validate_log_level" "DEBUG, INFO, WARNING, ERROR, CRITICAL" ".env" >> "$temp_env_file"
+    prompt_env_var "LOG_FILE" "./logs/kme.log" "Path to log file" "" "" ".env" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # API Configuration
     echo "# API Configuration" >> "$temp_env_file"
-    prompt_env_var "API_VERSION" "v1" "API version" >> "$temp_env_file"
-    prompt_env_var "API_PREFIX" "/api" "API URL prefix" >> "$temp_env_file"
+    prompt_env_var "API_VERSION" "v1" "API version" "" "" ".env" >> "$temp_env_file"
+    prompt_env_var "API_PREFIX" "/api" "API URL prefix" "" "" ".env" >> "$temp_env_file"
     
     # Move temporary file to .env
     mv "$temp_env_file" ".env"
