@@ -545,6 +545,74 @@ import_ca_certificate() {
     print_success "CA certificate imported and .env updated"
 }
 
+# Function to show certificate configuration submenu
+show_certificate_menu() {
+    while true; do
+        clear
+        echo "=========================================="
+        echo "        Certificate Configuration"
+        echo "=========================================="
+        echo ""
+        
+        # Show certificate status
+        echo "Certificate Status:"
+        if [ -f "certs/ca/ca.crt" ]; then
+            echo -e "  ${GREEN}✓${NC} CA Certificate"
+        else
+            echo -e "  ${RED}✗${NC} CA Certificate"
+        fi
+        
+        if [ -f "certs/kme/kme.crt" ] && [ -f "certs/kme/kme.key" ]; then
+            echo -e "  ${GREEN}✓${NC} KME Certificate"
+        else
+            echo -e "  ${RED}✗${NC} KME Certificate"
+        fi
+        
+        sae_count=$(find certs/sae -name "*.crt" 2>/dev/null | wc -l)
+        if [ "$sae_count" -gt 0 ]; then
+            echo -e "  ${GREEN}✓${NC} SAE Certificates ($sae_count found)"
+        else
+            echo -e "  ${RED}✗${NC} SAE Certificates"
+        fi
+        
+        echo ""
+        echo "Options:"
+        echo "  1) Import CA Certificate"
+        echo "  2) Import KME Certificate (P12)"
+        echo "  3) Import SAE Certificates (P12)"
+        echo "  b) Back to Main Menu"
+        echo "  q) Quit"
+        echo ""
+        
+        read -p "Select option: " cert_choice
+        
+        case $cert_choice in
+            1)
+                import_ca_certificate
+                ;;
+            2)
+                import_kme_certificate
+                ;;
+            3)
+                import_sae_certificates
+                ;;
+            b|B)
+                return 0
+                ;;
+            q|Q)
+                print_status "Exiting setup menu"
+                exit 0
+                ;;
+            *)
+                print_error "Invalid option. Please try again."
+                ;;
+        esac
+        
+        echo ""
+        read -p "Press Enter to continue..."
+    done
+}
+
 # Function to import SAE certificates
 import_sae_certificates() {
     print_status "Importing SAE certificates..."
@@ -730,14 +798,12 @@ show_menu() {
     echo "  2) Setup Virtual Environment"
     echo "  3) Create Directory Structure"
     echo "  4) Create Environment Configuration (Interactive)"
-    echo "  5) Import KME Certificate (P12)"
-    echo "  6) Import CA Certificate"
-    echo "  7) Import SAE Certificates (P12)"
-    echo "  8) Setup Nginx Configuration"
-    echo "  9) Verify Complete Setup"
-    echo "  10) Run Complete Setup (All Steps)"
-    echo "  11) Troubleshoot Pip Performance"
-    echo "  12) Create Environment Configuration (Use Defaults)"
+    echo "  5) Certificate Configuration"
+    echo "  6) Setup Nginx Configuration"
+    echo "  7) Verify Complete Setup"
+    echo "  8) Run Complete Setup (All Steps)"
+    echo "  9) Troubleshoot Pip Performance"
+    echo "  10) Create Environment Configuration (Use Defaults)"
     echo "  q) Quit"
     echo ""
 }
@@ -838,9 +904,8 @@ run_complete_setup() {
     echo ""
     read -p "Do you want to import certificates now? (y/n): " import_certs
     if [ "$import_certs" = "y" ] || [ "$import_certs" = "Y" ]; then
-        import_kme_certificate
-        import_ca_certificate
-        import_sae_certificates
+        print_status "Opening certificate configuration menu..."
+        show_certificate_menu
     fi
     
     # Setup nginx
@@ -883,27 +948,21 @@ while true; do
             create_env_file
             ;;
         5)
-            import_kme_certificate
+            show_certificate_menu
             ;;
         6)
-            import_ca_certificate
-            ;;
-        7)
-            import_sae_certificates
-            ;;
-        8)
             setup_nginx
             ;;
-        9)
+        7)
             verify_setup
             ;;
-        10)
+        8)
             run_complete_setup
             ;;
-        11)
+        9)
             troubleshoot_pip_performance
             ;;
-        12)
+        10)
             create_env_file_defaults
             ;;
         q|Q)
