@@ -236,10 +236,9 @@ prompt_env_var() {
     
     echo ""
     print_status "$description"
-    echo "Default: $default_value"
     
     while true; do
-        read -p "Enter value for $var_name (or press Enter for default): " user_value
+        read -p "Enter value for $var_name [$default_value]: " user_value
         
         # Use default if user just pressed Enter
         if [ -z "$user_value" ]; then
