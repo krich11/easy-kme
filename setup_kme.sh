@@ -355,9 +355,9 @@ validate_positive_int() {
     fi
 }
 
-# Function to create .env file interactively
+# Function to create .env file
 create_env_file() {
-    print_status "Creating .env file interactively..."
+    print_status "Creating .env file..."
     
     if [ -f ".env" ]; then
         print_warning ".env file already exists. Backing up to .env.backup"
@@ -369,6 +369,22 @@ create_env_file() {
     echo "        Environment Configuration"
     echo "=========================================="
     echo ""
+    print_status "Choose configuration mode:"
+    echo "  1) Interactive - Configure each setting individually"
+    echo "  2) Default - Use recommended default values"
+    echo ""
+    
+    read -p "Select mode (1 or 2): " config_mode
+    
+    if [ "$config_mode" = "2" ]; then
+        create_env_file_defaults
+        return 0
+    elif [ "$config_mode" != "1" ]; then
+        print_error "Invalid selection. Using interactive mode."
+    fi
+    
+    echo ""
+    print_status "Interactive mode selected."
     print_status "You will now be prompted for each configuration value."
     print_status "Press Enter to accept the default value, or type a custom value."
     echo ""
@@ -919,7 +935,6 @@ show_menu() {
     echo "  6) Setup Nginx Configuration"
     echo "  7) Verify Complete Setup"
     echo "  8) Run Complete Setup (All Steps)"
-    echo "  9) Create Environment Configuration (Use Defaults)"
     echo "  q) Quit"
     echo ""
 }
@@ -943,13 +958,7 @@ run_complete_setup() {
     create_directory_structure
     
     # Create .env file
-    echo ""
-    read -p "Do you want to configure environment variables interactively? (y/n): " interactive_env
-    if [ "$interactive_env" = "y" ] || [ "$interactive_env" = "Y" ]; then
-        create_env_file
-    else
-        create_env_file_defaults
-    fi
+    create_env_file
     
     # Import certificates (optional)
     echo ""
@@ -1009,9 +1018,6 @@ while true; do
             ;;
         8)
             run_complete_setup
-            ;;
-        9)
-            create_env_file_defaults
             ;;
         q|Q)
             print_status "Exiting setup menu"
