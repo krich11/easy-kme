@@ -935,11 +935,250 @@ show_menu() {
     echo "  6) Setup Nginx Configuration"
     echo "  7) Verify Complete Setup"
     echo "  8) Run Complete Setup (All Steps)"
+    echo "  9) Start KME Server (Manual or Service)"
     echo "  q) Quit"
     echo ""
 }
 
 
+
+# Function to perform comprehensive setup check and start KME
+comprehensive_check_and_start() {
+    print_status "Performing comprehensive setup verification..."
+    
+    local issues=()
+    local warnings=()
+    
+    echo ""
+    echo "=========================================="
+    echo "        Comprehensive Setup Check"
+    echo "=========================================="
+    echo ""
+    
+    # Check prerequisites
+    print_status "Checking prerequisites..."
+    if ! check_prerequisites; then
+        issues+=("Missing prerequisites - run option 1 to install")
+    else
+        print_success "✓ Prerequisites satisfied"
+    fi
+    
+    # Check virtual environment
+    print_status "Checking virtual environment..."
+    if [ ! -d "venv" ]; then
+        issues+=("Missing virtual environment - run option 2 to create")
+    else
+        print_success "✓ Virtual environment exists"
+    fi
+    
+    # Check .env file
+    print_status "Checking environment configuration..."
+    if [ ! -f ".env" ]; then
+        issues+=("Missing .env file - run option 4 to create")
+    else
+        print_success "✓ Environment configuration exists"
+    fi
+    
+    # Check certificates
+    print_status "Checking certificates..."
+    if [ ! -f "certs/kme/kme.crt" ] || [ ! -f "certs/kme/kme.key" ]; then
+        issues+=("Missing KME certificates - run option 5 to configure")
+    else
+        print_success "✓ KME certificates exist"
+    fi
+    
+    if [ ! -f "certs/ca/ca.crt" ]; then
+        issues+=("Missing CA certificate - run option 5 to configure")
+    else
+        print_success "✓ CA certificate exists"
+    fi
+    
+    # Check nginx
+    print_status "Checking Nginx configuration..."
+    if [ ! -f "/etc/nginx/sites-enabled/easy-kme" ]; then
+        issues+=("Nginx not configured - run option 6 to configure")
+    else
+        print_success "✓ Nginx configuration exists"
+    fi
+    
+    # Check if nginx is running
+    if ! systemctl is-active --quiet nginx; then
+        warnings+=("Nginx service is not running")
+    else
+        print_success "✓ Nginx service is running"
+    fi
+    
+    # Check if KME is already running
+    if pgrep -f "python.*main.py" > /dev/null; then
+        warnings+=("KME server appears to be already running")
+    fi
+    
+    echo ""
+    
+    # Report results
+    if [ ${#issues[@]} -gt 0 ]; then
+        print_error "Setup issues found:"
+        for issue in "${issues[@]}"; do
+            echo "  - $issue"
+        done
+        echo ""
+        print_error "Please resolve these issues before starting the KME server."
+        return 1
+    fi
+    
+    if [ ${#warnings[@]} -gt 0 ]; then
+        print_warning "Warnings:"
+        for warning in "${warnings[@]}"; do
+            echo "  - $warning"
+        done
+        echo ""
+    fi
+    
+    print_success "✓ All setup requirements satisfied!"
+    echo ""
+    
+    # Offer startup options
+    print_status "Choose how to start the KME server:"
+    echo "  1) Manual startup (run in terminal)"
+    echo "  2) Install as system service (recommended)"
+    echo ""
+    
+    read -p "Select option (1 or 2): " startup_choice
+    
+    case $startup_choice in
+        1)
+            start_kme_manual
+            ;;
+        2)
+            install_kme_service
+            ;;
+        *)
+            print_error "Invalid selection. Exiting."
+            return 1
+            ;;
+    esac
+}
+
+# Function to start KME manually
+start_kme_manual() {
+    print_status "Starting KME server manually..."
+    
+    echo ""
+    print_status "Manual startup instructions:"
+    echo "=========================================="
+    echo ""
+    echo "1. Open a new terminal window"
+    echo "2. Navigate to the KME directory:"
+    echo "   cd $(pwd)"
+    echo ""
+    echo "3. Activate the virtual environment:"
+    echo "   source venv/bin/activate"
+    echo ""
+    echo "4. Start the KME server:"
+    echo "   python src/main.py"
+    echo ""
+    echo "5. The server will start on the configured host and port"
+    echo "   (check .env file for KME_HOST and KME_PORT settings)"
+    echo ""
+    echo "6. To stop the server, press Ctrl+C in the terminal"
+    echo ""
+    print_status "Starting KME server now..."
+    
+    # Activate virtual environment and start server
+    source venv/bin/activate
+    python src/main.py
+}
+
+# Function to install KME as a system service
+install_kme_service() {
+    print_status "Installing KME as a system service..."
+    
+    echo ""
+    print_status "This will create a systemd service for the KME server."
+    print_status "The service will run as the current user from the current directory."
+    echo ""
+    
+    # Get current user and directory
+    local current_user=$(whoami)
+    local current_dir=$(pwd)
+    
+    # Create systemd service file
+    local service_file="/etc/systemd/system/easy-kme.service"
+    
+    print_status "Creating systemd service file..."
+    print_status "Requesting sudo privileges to create service file..."
+    
+    sudo tee "$service_file" > /dev/null << EOF
+[Unit]
+Description=Easy-KME Server
+After=network.target nginx.service
+Wants=nginx.service
+
+[Service]
+Type=simple
+User=$current_user
+Group=$current_user
+WorkingDirectory=$current_dir
+Environment=PATH=$current_dir/venv/bin
+ExecStart=$current_dir/venv/bin/python $current_dir/src/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    if [ $? -eq 0 ]; then
+        print_success "Service file created successfully"
+        
+        # Reload systemd
+        print_status "Reloading systemd configuration..."
+        sudo systemctl daemon-reload
+        
+        # Ask if user wants to enable and start the service
+        echo ""
+        print_status "Service installation completed!"
+        echo ""
+        read -p "Do you want to enable and start the KME service now? (y/n): " enable_service
+        
+        if [ "$enable_service" = "y" ] || [ "$enable_service" = "Y" ]; then
+            print_status "Enabling KME service..."
+            sudo systemctl enable easy-kme
+            
+            print_status "Starting KME service..."
+            sudo systemctl start easy-kme
+            
+            # Check service status
+            if systemctl is-active --quiet easy-kme; then
+                print_success "✓ KME service is now running!"
+                echo ""
+                print_status "Service management commands:"
+                echo "  Status:   sudo systemctl status easy-kme"
+                echo "  Start:    sudo systemctl start easy-kme"
+                echo "  Stop:     sudo systemctl stop easy-kme"
+                echo "  Restart:  sudo systemctl restart easy-kme"
+                echo "  Logs:     sudo journalctl -u easy-kme -f"
+                echo ""
+            else
+                print_error "Failed to start KME service"
+                print_status "Check service status with: sudo systemctl status easy-kme"
+                return 1
+            fi
+        else
+            echo ""
+            print_status "Service installed but not started."
+            print_status "To start the service later, run:"
+            echo "  sudo systemctl enable easy-kme"
+            echo "  sudo systemctl start easy-kme"
+            echo ""
+        fi
+    else
+        print_error "Failed to create service file"
+        return 1
+    fi
+}
 
 # Function to run complete setup
 run_complete_setup() {
@@ -1018,6 +1257,9 @@ while true; do
             ;;
         8)
             run_complete_setup
+            ;;
+        9)
+            comprehensive_check_and_start
             ;;
         q|Q)
             print_status "Exiting setup menu"
