@@ -20,6 +20,13 @@ tar -czf "$ARCHIVE_NAME" \
     --exclude='.git' \
     --exclude='logs' \
     --exclude='.pytest_cache' \
+    --exclude='certs/ca/ca.conf' \
+    --exclude='certs/ca/ca.srl' \
+    --exclude='certs/ca/ca.srl.old' \
+    --exclude='certs/ca/index.txt' \
+    --exclude='certs/ca/index.txt.old' \
+    --exclude='certs/ca/index.txt.attr' \
+    --exclude='certs/ca/index.txt.attr.old' \
     test_kme_api.sh \
     certs/ \
     TESTING.md \
