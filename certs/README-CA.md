@@ -1,10 +1,10 @@
-# Certificate Authority (CA) Setup for Easy-KMS
+# Certificate Authority (CA) Setup for Easy-KME
 
-This document provides instructions for setting up a Certificate Authority (CA) and generating certificates for the Easy-KMS server and SAE clients.
+This document provides instructions for setting up a Certificate Authority (CA) and generating certificates for the Easy-KME server and SAE clients.
 
 ## Overview
 
-The Easy-KMS server uses mutual TLS (mTLS) authentication, requiring:
+The Easy-KME server uses mutual TLS (mTLS) authentication, requiring:
 - A Certificate Authority (CA) to sign certificates
 - KME server certificate and private key
 - SAE client certificates and private keys
@@ -36,7 +36,7 @@ easy-kme/
 
 ## Step 1: Create Certificate Directory Structure
 
-First, navigate to the Easy-KMS project directory:
+First, navigate to the Easy-KME project directory:
 
 ```bash
 cd /home/krich/src/easy-kme
@@ -96,9 +96,9 @@ prompt = no
 C = US
 ST = California
 L = San Francisco
-O = Easy-KMS Lab
+O = Easy-KME Lab
 OU = QKD Development
-CN = Easy-KMS Root CA
+CN = Easy-KME Root CA
 
 [v3_req]
 basicConstraints = CA:TRUE
@@ -175,7 +175,7 @@ prompt = no
 C = US
 ST = California
 L = San Francisco
-O = Easy-KMS Lab
+O = Easy-KME Lab
 OU = QKD Development
 
 [v3_req]
@@ -273,7 +273,7 @@ prompt = no
 C = US
 ST = California
 L = San Francisco
-O = Easy-KMS Lab
+O = Easy-KME Lab
 OU = QKD Development
 CN = KME_LAB_001
 
@@ -356,7 +356,7 @@ prompt = no
 C = US
 ST = California
 L = San Francisco
-O = Easy-KMS Lab
+O = Easy-KME Lab
 OU = QKD Development
 CN = SAE_001
 
@@ -435,7 +435,7 @@ prompt = no
 C = US
 ST = California
 L = San Francisco
-O = Easy-KMS Lab
+O = Easy-KME Lab
 OU = QKD Development
 CN = SAE_002
 
@@ -531,9 +531,9 @@ openssl x509 -in certs/sae/sae2.crt -text -noout | grep -A 5 "Subject:"
 
 **What this does:** Shows the subject (identity) of each certificate to confirm they have the correct Common Names (KME_LAB_001, SAE_001, SAE_002).
 
-## Step 9: Create Certificate Bundle for Easy-KMS
+## Step 9: Create Certificate Bundle for Easy-KME
 
-Create symbolic links that point to the actual certificate files. This allows the Easy-KMS server to use standardized paths:
+Create symbolic links that point to the actual certificate files. This allows the Easy-KME server to use standardized paths:
 
 ```bash
 ln -sf certs/kme/kme.crt certs/kme_cert.pem
@@ -541,7 +541,7 @@ ln -sf certs/kme/kme.key certs/kme_key.pem
 ln -sf certs/ca/ca.crt certs/ca_cert.pem
 ```
 
-**What this does:** Creates symbolic links that the Easy-KMS server expects:
+**What this does:** Creates symbolic links that the Easy-KME server expects:
 - `certs/kme_cert.pem` → points to the KME server certificate
 - `certs/kme_key.pem` → points to the KME server private key
 - `certs/ca_cert.pem` → points to the CA certificate
@@ -597,9 +597,9 @@ find certs/ -name "*.pem" -exec ls -la {} \;
 | SAE1 Client | `certs/sae/sae1.key` | `certs/sae/sae1.crt` | `certs/sae/` |
 | SAE2 Client | `certs/sae/sae2.key` | `certs/sae/sae2.crt` | `certs/sae/` |
 
-## Easy-KMS Configuration Paths
+## Easy-KME Configuration Paths
 
-The Easy-KMS server expects certificates at these locations (configured in `.env`):
+The Easy-KME server expects certificates at these locations (configured in `.env`):
 
 - **KME Certificate**: `./certs/kme_cert.pem`
 - **KME Private Key**: `./certs/kme_key.pem`
@@ -643,7 +643,7 @@ openssl s_client -connect localhost:8443 -cert certs/sae/sae1.crt -key certs/sae
 
 After completing this CA setup:
 
-1. Configure the Easy-KMS server using the generated certificates
+1. Configure the Easy-KME server using the generated certificates
 2. Test the server with SAE clients
 3. Refer to `README-KME.md` for server configuration
 4. Refer to `README-SAE-CERT.md` for SAE client setup 

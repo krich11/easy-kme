@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Easy-KMS ETSI GS QKD 014 API Test Script
+# Easy-KME ETSI GS QKD 014 API Test Script
 # Tests all three API methods according to ETSI specification
 
 set -e
@@ -408,7 +408,7 @@ test_health_and_docs() {
 show_menu() {
     clear
     echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}  Easy-KMS API Test Suite${NC}"
+    echo -e "${BLUE}  Easy-KME API Test Suite${NC}"
     echo -e "${BLUE}  ETSI GS QKD 014 Compliant${NC}"
     echo -e "${BLUE}================================${NC}"
     echo

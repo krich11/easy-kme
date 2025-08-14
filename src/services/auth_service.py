@@ -1,5 +1,5 @@
 """
-Authentication service for Easy-KMS server.
+Authentication service for Easy-KME server.
 Handles certificate-based authentication and SAE ID extraction.
 """
 

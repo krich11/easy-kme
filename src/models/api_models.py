@@ -60,7 +60,7 @@ class SpecKeyContainer(BaseModel):
     """ETSI 014 key container."""
     keys: List[SpecKey]
     key_container_extension: Optional[dict] = Field(default=None)
-    easy_kms_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KMS vendor-specific certificate information")
+    easy_kme_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KME vendor-specific certificate information")
 
 
 class KeyID(BaseModel):
@@ -89,7 +89,7 @@ class ErrorResponse(BaseModel):
     error_code: int = Field(..., description="HTTP error code")
     error_message: str = Field(..., description="Error description")
     details: Optional[str] = Field(default=None, description="Additional error details")
-    easy_kms_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KMS vendor-specific certificate information if available")
+    easy_kme_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KME vendor-specific certificate information if available")
 
 
 class StatusResponse(BaseModel):
@@ -115,4 +115,4 @@ class StatusSpec(BaseModel):
     min_key_size: int
     max_SAE_ID_count: int
     status_extension: Optional[dict] = None
-    easy_kms_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KMS vendor-specific certificate information")
+    easy_kme_certificate_extension: Optional[CertificateExtension] = Field(default=None, description="Easy-KME vendor-specific certificate information")

@@ -1,6 +1,6 @@
-# Easy-KMS Setup Guide
+# Easy-KME Setup Guide
 
-This guide explains how to set up the Easy-KMS server from scratch using the automated setup script.
+This guide explains how to set up the Easy-KME server from scratch using the automated setup script.
 
 ## Quick Start
 
@@ -69,7 +69,7 @@ If you prefer to run setup steps individually, use the menu-driven interface:
 
 #### 8. Nginx Configuration
 - **What it does**: Sets up Nginx as reverse proxy for mTLS termination
-- **Copies**: `nginx.conf` to `/etc/nginx/sites-available/easy-kms`
+- **Copies**: `nginx.conf` to `/etc/nginx/sites-available/easy-kme`
 - **Links**: Creates symlink in `/etc/nginx/sites-enabled/`
 - **Tests**: Validates Nginx configuration
 - **Reloads**: Nginx service with new configuration

@@ -1,6 +1,6 @@
-# Contributing to Easy-KMS
+# Contributing to Easy-KME
 
-Thank you for your interest in contributing to Easy-KMS! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Easy-KME! This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -45,8 +45,8 @@ This project and everyone participating in it is governed by our Code of Conduct
 
 1. Clone your fork:
    ```bash
-   git clone https://github.com/yourusername/easy-kms.git
-   cd easy-kms
+   git clone https://github.com/yourusername/easy-kme.git
+   cd easy-kme
    ```
 
 2. Create a virtual environment:
@@ -137,6 +137,6 @@ Fixes #123
 
 ## License
 
-By contributing to Easy-KMS, you agree that your contributions will be licensed under the MIT License.
+By contributing to Easy-KME, you agree that your contributions will be licensed under the MIT License.
 
-Thank you for contributing to Easy-KMS! 
+Thank you for contributing to Easy-KME! 

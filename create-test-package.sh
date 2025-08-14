@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Easy-KMS Test Package Creator - Bare Bones Version
+# Easy-KME Test Package Creator - Bare Bones Version
 # Creates a simple tar.gz with test files
 
 set -e
 
 # Configuration
-PACKAGE_NAME="easy-kms-test-package"
+PACKAGE_NAME="easy-kme-test-package"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 ARCHIVE_NAME="${PACKAGE_NAME}-${TIMESTAMP}.tar.gz"
 

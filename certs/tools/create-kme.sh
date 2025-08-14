@@ -15,7 +15,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 
 [v3_req]
 basicConstraints = CA:FALSE
@@ -86,7 +86,7 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
+OU = Easy-KME Lab
 CN = KME_LAB_001
 
 [v3_req]

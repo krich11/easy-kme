@@ -100,4 +100,4 @@ This workflow ensures:
 - **Compliance**: Follows ETSI GS QKD 014 specification exactly
 - **Interoperability**: Works with other ETSI-compliant implementations
 
-The test script validates that your Easy-KMS implementation correctly follows this ETSI workflow. 
+The test script validates that your Easy-KME implementation correctly follows this ETSI workflow. 

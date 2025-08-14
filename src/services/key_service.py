@@ -1,5 +1,5 @@
 """
-Key service for Easy-KMS server.
+Key service for Easy-KME server.
 Handles key generation, management, and distribution.
 """
 

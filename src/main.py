@@ -1,5 +1,5 @@
 """
-Easy-KMS Server - ETSI GS QKD 014 Key Management Entity
+Easy-KME Server - ETSI GS QKD 014 Key Management Entity
 Main application entry point.
 """
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI application
 app = FastAPI(
-    title="Easy-KMS",
+    title="Easy-KME",
     description="ETSI GS QKD 014 Key Management Entity (KME) Server",
     version="1.0.0",
     docs_url="/docs",
@@ -49,21 +49,21 @@ app.include_router(router)
 async def startup_event():
     """Application startup event."""
     settings = get_settings()
-    logger.info(f"Starting Easy-KMS server on {settings.kme_host}:8000")
+    logger.info(f"Starting Easy-KME server on {settings.kme_host}:8000")
     logger.info(f"KME ID: {settings.kme_id}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event."""
-    logger.info("Shutting down Easy-KMS server")
+    logger.info("Shutting down Easy-KME server")
 
 
 @app.get("/")
 async def root():
     """Root endpoint."""
     return {
-        "message": "Easy-KMS Server",
+        "message": "Easy-KME Server",
         "version": "1.0.0",
         "specification": "ETSI GS QKD 014 v1.1.1",
         "docs": "/docs"
@@ -170,7 +170,7 @@ def run_server():
     """Run the KME server with HTTP (nginx handles SSL)."""
     settings = get_settings()
     
-    logger.info("Starting Easy-KMS server with HTTP (nginx handles mTLS)...")
+    logger.info("Starting Easy-KME server with HTTP (nginx handles mTLS)...")
     
     # Run with uvicorn on HTTP (nginx handles SSL)
     uvicorn.run(

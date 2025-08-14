@@ -1,5 +1,5 @@
 """
-Internal data models for Easy-KMS server.
+Internal data models for Easy-KME server.
 """
 
 from typing import List, Optional, Dict, Any

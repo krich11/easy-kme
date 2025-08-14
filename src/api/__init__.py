@@ -1,5 +1,5 @@
 """
-API routes for Easy-KMS server.
+API routes for Easy-KME server.
 """
 
 from .routes import router

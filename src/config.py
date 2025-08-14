@@ -1,5 +1,5 @@
 """
-Configuration management for Easy-KMS server.
+Configuration management for Easy-KME server.
 Simple environment-backed settings with validation (no external dependencies).
 """
 

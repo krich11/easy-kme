@@ -1,5 +1,5 @@
 """
-API routes for Easy-KMS server implementing ETSI GS QKD 014 specification.
+API routes for Easy-KME server implementing ETSI GS QKD 014 specification.
 """
 
 from fastapi import APIRouter, Request, HTTPException, Depends
@@ -65,7 +65,7 @@ async def get_status(slave_sae_id: str, request: Request):
             max_key_size=getattr(settings, "key_max_size", settings.key_size),
             min_key_size=getattr(settings, "key_min_size", 8),
             max_SAE_ID_count=getattr(settings, "max_sae_id_count", 0),
-            easy_kms_easy_kms_certificate_extension=cert_extension
+            easy_kme_easy_kme_certificate_extension=cert_extension
         )
         
     except HTTPException:
@@ -122,7 +122,7 @@ async def get_key(
         
         # Map internal response to spec container
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
-        return SpecKeyContainer(keys=spec_keys, easy_kms_easy_kms_certificate_extension=cert_extension)
+        return SpecKeyContainer(keys=spec_keys, easy_kme_easy_kme_certificate_extension=cert_extension)
         
     except HTTPException:
         raise
@@ -179,7 +179,7 @@ async def get_key_with_key_ids(
         cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
-        return SpecKeyContainer(keys=spec_keys, easy_kms_certificate_extension=cert_extension)
+        return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
     except HTTPException:
         raise
     except Exception as e:
@@ -208,7 +208,7 @@ async def get_key_get(slave_sae_id: str, request: Request, number: Optional[int]
         cert_extension = middleware.create_certificate_extension(request, master_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
-        return SpecKeyContainer(keys=spec_keys, easy_kms_certificate_extension=cert_extension)
+        return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
     except HTTPException:
         raise
     except Exception as e:
@@ -237,7 +237,7 @@ async def get_key_with_key_ids_get(master_sae_id: str, request: Request, key_ID:
         cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
-        return SpecKeyContainer(keys=spec_keys, easy_kms_certificate_extension=cert_extension)
+        return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
     except HTTPException:
         raise
     except Exception as e:

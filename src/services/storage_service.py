@@ -1,5 +1,5 @@
 """
-File-based storage service for Easy-KMS server.
+File-based storage service for Easy-KME server.
 """
 
 import json

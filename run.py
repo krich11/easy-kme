@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Launcher script for Easy-KMS server.
+Launcher script for Easy-KME server.
 """
 
 import sys

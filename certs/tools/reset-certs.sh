@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Easy-KMS Certificate Reset Script
+# Easy-KME Certificate Reset Script
 # Clears out all certificate directories and files
 
 set -e
@@ -65,7 +65,7 @@ remove_file() {
 }
 
 main() {
-    print_header "Easy-KMS Certificate Reset"
+    print_header "Easy-KME Certificate Reset"
     
     echo "This script will remove all certificates and related files."
     echo "This action cannot be undone!"

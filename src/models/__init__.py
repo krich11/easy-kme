@@ -1,5 +1,5 @@
 """
-Pydantic models for Easy-KMS API.
+Pydantic models for Easy-KME API.
 """
 
 from .api_models import *

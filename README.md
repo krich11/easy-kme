@@ -1,10 +1,10 @@
-# Easy-KMS
+# Easy-KME
 
-A comprehensive Key Management System (KMS) solution designed for simplicity and security.
+A comprehensive Key Management Entity (KME) solution designed for simplicity and security.
 
 ## Overview
 
-Easy-KMS provides a streamlined approach to key management, offering both ease of use and robust security features. This project aims to simplify the complex process of managing cryptographic keys while maintaining enterprise-grade security standards.
+Easy-KME provides a streamlined approach to key management, offering both ease of use and robust security features. This project aims to simplify the complex process of managing cryptographic keys while maintaining enterprise-grade security standards.
 
 ## Features
 
@@ -27,8 +27,8 @@ Easy-KMS provides a streamlined approach to key management, offering both ease o
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/easy-kms.git
-cd easy-kms
+git clone https://github.com/yourusername/easy-kme.git
+cd easy-kme
 
 # Install dependencies
 pip install -r requirements.txt
@@ -77,7 +77,7 @@ For support and questions:
 
 ## Roadmap
 
-- [ ] Core KMS functionality
+- [ ] Core KME functionality
 - [ ] Web-based management interface
 - [ ] API endpoints
 - [ ] Integration examples

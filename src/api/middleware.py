@@ -1,5 +1,5 @@
 """
-Authentication middleware for Easy-KMS server.
+Authentication middleware for Easy-KME server.
 Handles client authentication and SAE ID extraction.
 """
 
@@ -73,7 +73,7 @@ def authenticate_client(request: Request) -> str:
     if cert_info and cert_info["verified"] == "SUCCESS":
         try:
             # Extract SAE ID from the DN (Common Name)
-            # DN format: "CN=SAE_001,OU=Easy-KMS Lab,O=HPE-Networking,ST=TX,C=US"
+            # DN format: "CN=SAE_001,OU=Easy-KME Lab,O=HPE-Networking,ST=TX,C=US"
             dn = cert_info["dn"]
             sae_id = None
             

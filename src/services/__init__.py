@@ -1,5 +1,5 @@
 """
-Services for Easy-KMS server.
+Services for Easy-KME server.
 """
 
 from .storage_service import StorageService

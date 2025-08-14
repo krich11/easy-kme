@@ -1,10 +1,10 @@
-# Easy-KMS Server Setup and Configuration
+# Easy-KME Server Setup and Configuration
 
-This document provides instructions for setting up, configuring, and running the Easy-KMS server according to the ETSI GS QKD 014 specification.
+This document provides instructions for setting up, configuring, and running the Easy-KME server according to the ETSI GS QKD 014 specification.
 
 ## Overview
 
-The Easy-KMS server implements the ETSI GS QKD 014 Key Management Entity (KME) with:
+The Easy-KME server implements the ETSI GS QKD 014 Key Management Entity (KME) with:
 - Three REST API endpoints for key delivery
 - Mutual TLS (mTLS) authentication
 - File-based key storage
@@ -21,14 +21,14 @@ The Easy-KMS server implements the ETSI GS QKD 014 Key Management Entity (KME) w
 
 ### Step 1: Clone and Setup
 
-Clone the Easy-KMS repository to your local machine:
+Clone the Easy-KME repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/easy-kms.git
-cd easy-kms
+git clone https://github.com/yourusername/easy-kme.git
+cd easy-kme
 ```
 
-**What this does:** Downloads the Easy-KMS source code and navigates to the project directory.
+**What this does:** Downloads the Easy-KME source code and navigates to the project directory.
 
 Create a Python virtual environment to isolate the project dependencies:
 
@@ -169,23 +169,23 @@ Run the KME server in development mode:
 python run.py
 ```
 
-**What this does:** Starts the Easy-KMS server using the configuration in your `.env` file. The server will listen on the configured host and port with mTLS enabled.
+**What this does:** Starts the Easy-KME server using the configuration in your `.env` file. The server will listen on the configured host and port with mTLS enabled.
 
 ### Production Mode
 
 Create a systemd service file for automatic startup:
 
 ```bash
-sudo nano /etc/systemd/system/easy-kms.service
+sudo nano /etc/systemd/system/easy-kme.service
 ```
 
-**What this does:** Opens a text editor to create a systemd service file that will manage the Easy-KMS server as a system service.
+**What this does:** Opens a text editor to create a systemd service file that will manage the Easy-KME server as a system service.
 
 Add the following content to the service file:
 
 ```ini
 [Unit]
-Description=Easy-KMS Server
+Description=Easy-KME Server
 After=network.target
 
 [Service]
@@ -210,15 +210,15 @@ WantedBy=multi-user.target
 Enable the service to start automatically on boot:
 
 ```bash
-sudo systemctl enable easy-kms
+sudo systemctl enable easy-kme
 ```
 
 **What this does:** Configures the service to start automatically when the system boots.
 
-Start the Easy-KMS service:
+Start the Easy-KME service:
 
 ```bash
-sudo systemctl start easy-kms
+sudo systemctl start easy-kme
 ```
 
 **What this does:** Starts the KME server as a system service.
@@ -226,14 +226,14 @@ sudo systemctl start easy-kms
 Check the service status:
 
 ```bash
-sudo systemctl status easy-kms
+sudo systemctl status easy-kme
 ```
 
-**What this does:** Shows the current status of the Easy-KMS service, including whether it's running and any recent log messages.
+**What this does:** Shows the current status of the Easy-KME service, including whether it's running and any recent log messages.
 
 ## API Endpoints
 
-The Easy-KMS server implements three ETSI GS QKD 014 endpoints:
+The Easy-KME server implements three ETSI GS QKD 014 endpoints:
 
 ### 1. Get Status
 ```
@@ -369,10 +369,10 @@ tail -f logs/kme.log
 View system logs if running as a systemd service:
 
 ```bash
-sudo journalctl -u easy-kms -f
+sudo journalctl -u easy-kme -f
 ```
 
-**What this does:** Shows systemd journal logs for the Easy-KMS service. The `-f` flag follows the logs in real-time, similar to `tail -f`.
+**What this does:** Shows systemd journal logs for the Easy-KME service. The `-f` flag follows the logs in real-time, similar to `tail -f`.
 
 ### Key Pool Monitoring
 
@@ -402,13 +402,13 @@ cat data/sessions.json
 
 ### Performance Monitoring
 
-Check if the Easy-KMS server process is running:
+Check if the Easy-KME server process is running:
 
 ```bash
-ps aux | grep easy-kms
+ps aux | grep easy-kme
 ```
 
-**What this does:** Shows all running processes that match "easy-kms", including the main server process and any related processes.
+**What this does:** Shows all running processes that match "easy-kme", including the main server process and any related processes.
 
 Monitor network connections on the KME server port:
 

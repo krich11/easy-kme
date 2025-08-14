@@ -16,8 +16,8 @@ C = US
 ST = TX
 L = Burnet
 O = HPE-Networking
-OU = Easy-KMS Lab
-CN = Easy-KMS Root CA1
+OU = Easy-KME Lab
+CN = Easy-KME Root CA1
 
 [v3_req]
 basicConstraints = CA:TRUE

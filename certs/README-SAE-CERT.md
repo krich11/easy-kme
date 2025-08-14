@@ -1,6 +1,6 @@
 # SAE Client Certificate Setup and Integration
 
-This document provides instructions for setting up SAE (Secure Application Entity) client certificates and integrating with the Easy-KMS server according to the ETSI GS QKD 014 specification.
+This document provides instructions for setting up SAE (Secure Application Entity) client certificates and integrating with the Easy-KME server according to the ETSI GS QKD 014 specification.
 
 ## Overview
 
@@ -13,7 +13,7 @@ SAE clients need certificates to authenticate with the KME server for:
 ## Prerequisites
 
 - Generated CA and SAE certificates (see `README-CA.md`)
-- Easy-KMS server running (see `README-KME.md`)
+- Easy-KME server running (see `README-KME.md`)
 - Client application capable of HTTPS with client certificates
 - Linux/Unix environment
 
@@ -46,7 +46,7 @@ easy-kme/
 
 ### Verify Certificate Chain
 
-Navigate to the Easy-KMS project directory:
+Navigate to the Easy-KME project directory:
 
 ```bash
 cd /home/krich/src/easy-kme
@@ -224,7 +224,7 @@ curl -k \
 ```python
 #!/usr/bin/env python3
 """
-Example SAE client for Easy-KMS server.
+Example SAE client for Easy-KME server.
 """
 
 import requests

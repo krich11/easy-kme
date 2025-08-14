@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Easy-KMS Startup Script
+# Easy-KME Startup Script
 # Starts nginx (mTLS termination) and FastAPI application
 
 set -e
 
-echo "=== Starting Easy-KMS with nginx mTLS termination ==="
+echo "=== Starting Easy-KME with nginx mTLS termination ==="
 
 # Check if nginx is installed
 if ! command -v nginx &> /dev/null; then
@@ -24,7 +24,7 @@ if [ ! -f "./certs/kme_cert.pem" ] || [ ! -f "./certs/kme_key.pem" ] || [ ! -f "
 fi
 
 # Check if nginx site is configured
-if [ ! -L "/etc/nginx/sites-enabled/easy-kms" ]; then
+if [ ! -L "/etc/nginx/sites-enabled/easy-kme" ]; then
     echo "ERROR: nginx site not configured. Please run ./setup_nginx.sh first"
     exit 1
 fi
@@ -78,7 +78,7 @@ fi
 
 echo "nginx is running on port 8443"
 
-echo "=== Easy-KMS is ready ==="
+echo "=== Easy-KME is ready ==="
 echo "  - FastAPI: http://localhost:8000"
 echo "  - nginx (mTLS): https://localhost:8443"
 echo ""

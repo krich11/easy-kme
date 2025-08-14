@@ -1,8 +1,8 @@
-# Easy-KMS API Testing Guide
+# Easy-KME API Testing Guide
 
 ## Overview
 
-This guide provides comprehensive testing for the Easy-KMS server implementation of the ETSI GS QKD 014 specification. The test suite validates all three API methods and ensures compliance with the standard.
+This guide provides comprehensive testing for the Easy-KME server implementation of the ETSI GS QKD 014 specification. The test suite validates all three API methods and ensures compliance with the standard.
 
 ## ETSI GS QKD 014 Workflow
 
@@ -292,4 +292,4 @@ This test suite validates compliance with:
 - **Section 6.2**: Key request format
 - **Section 6.4**: Key IDs format
 
-The test suite ensures your Easy-KMS implementation is fully compliant with the ETSI GS QKD 014 standard. 
+The test suite ensures your Easy-KME implementation is fully compliant with the ETSI GS QKD 014 standard. 

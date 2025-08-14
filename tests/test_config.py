@@ -1,5 +1,5 @@
 """
-Basic tests for Easy-KMS configuration.
+Basic tests for Easy-KME configuration.
 """
 
 import pytest
