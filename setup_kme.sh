@@ -579,6 +579,41 @@ import_ca_certificate() {
             print_error "File not found: $ca_cert_input"
             return 1
         fi
+    else
+        # It starts with -----BEGIN, so it's PEM content, but we only got the first line
+        # We need to get the rest of the certificate
+        print_status "Detected PEM certificate start. Please paste the complete certificate content."
+        print_status "The certificate should include the BEGIN and END lines and all content in between."
+        echo ""
+        
+        # Create a temporary file for the user to paste into
+        local temp_file=$(mktemp)
+        print_status "A text editor will open. Paste the complete certificate content and save."
+        print_status "Temporary file: $temp_file"
+        echo ""
+        
+        # Try to use an editor (nano, vim, or vi)
+        if command_exists nano; then
+            nano "$temp_file"
+        elif command_exists vim; then
+            vim "$temp_file"
+        elif command_exists vi; then
+            vi "$temp_file"
+        else
+            print_error "No text editor found. Please install nano, vim, or vi."
+            rm -f "$temp_file"
+            return 1
+        fi
+        
+        # Read the content from the temporary file
+        if [ -s "$temp_file" ]; then
+            ca_cert_input=$(cat "$temp_file")
+            rm -f "$temp_file"
+        else
+            print_error "No certificate content was entered."
+            rm -f "$temp_file"
+            return 1
+        fi
     fi
     
     if [ -z "$ca_cert_input" ]; then
