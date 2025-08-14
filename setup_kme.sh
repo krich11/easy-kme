@@ -646,8 +646,8 @@ DNS.2 = localhost
 IP.1 = 127.0.0.1
 EOF
     
-    # Generate private key and CSR
-    openssl req -new -newkey rsa:2048 -keyout certs/kme/kme.key -out certs/kme/kme.csr -config certs/kme/csr.conf
+    # Generate private key and CSR (unencrypted key for lab use)
+    openssl req -new -newkey rsa:2048 -nodes -keyout certs/kme/kme.key -out certs/kme/kme.csr -config certs/kme/csr.conf
     
     if [ $? -eq 0 ]; then
         chmod 600 certs/kme/kme.key
