@@ -235,12 +235,12 @@ prompt_env_var() {
     local validation_func="$4"
     local options="$5"
     
-    echo ""
-    print_status "$description"
+    echo "" >&2
+    print_status "$description" >&2
     
-    # Show available options if provided
+    # Show available options if provided (to stderr for terminal display)
     if [ -n "$options" ]; then
-        echo "Options: $options"
+        echo "Options: $options" >&2
     fi
     
     while true; do
@@ -256,7 +256,7 @@ prompt_env_var() {
             if $validation_func "$user_value"; then
                 break
             else
-                print_error "Invalid value. Please try again."
+                print_error "Invalid value. Please try again." >&2
                 continue
             fi
         else
@@ -264,6 +264,7 @@ prompt_env_var() {
         fi
     done
     
+    # Output only the variable assignment to stdout (for file redirection)
     echo "$var_name=$user_value"
 }
 
