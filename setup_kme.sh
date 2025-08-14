@@ -1071,22 +1071,18 @@ start_kme_manual() {
     echo "2. Navigate to the KME directory:"
     echo "   cd $(pwd)"
     echo ""
-    echo "3. Activate the virtual environment:"
-    echo "   source venv/bin/activate"
+    echo "3. Run the manual startup script:"
+    echo "   ./manual_start_kme.sh"
     echo ""
-    echo "4. Start the KME server:"
-    echo "   python run.py"
-    echo ""
-    echo "5. The server will start on the configured host and port"
+    echo "4. The script will start both nginx (mTLS termination) and the KME server"
     echo "   (check .env file for KME_HOST and KME_PORT settings)"
     echo ""
-    echo "6. To stop the server, press Ctrl+C in the terminal"
+    echo "5. To stop the server, press Ctrl+C in the terminal"
     echo ""
     print_status "Starting KME server now..."
     
-    # Activate virtual environment and start server
-    source venv/bin/activate
-    python run.py
+    # Run the manual startup script
+    ./manual_start_kme.sh
 }
 
 # Function to install KME as a system service
