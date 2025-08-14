@@ -1079,8 +1079,9 @@ start_kme_manual() {
     echo ""
     echo "5. To stop the server, press Ctrl+C in the terminal"
     echo ""
-    print_status "Press Enter to return to the main menu..."
-    read -r
+    print_status "Setup complete. Exiting to command line..."
+    echo ""
+    exit 0
 }
 
 # Function to install KME as a system service
