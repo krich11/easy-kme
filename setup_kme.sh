@@ -1061,7 +1061,7 @@ comprehensive_check_and_start() {
 
 # Function to start KME manually
 start_kme_manual() {
-    print_status "Starting KME server manually..."
+    print_status "Manual startup instructions:"
     
     echo ""
     print_status "Manual startup instructions:"
@@ -1079,10 +1079,8 @@ start_kme_manual() {
     echo ""
     echo "5. To stop the server, press Ctrl+C in the terminal"
     echo ""
-    print_status "Starting KME server now..."
-    
-    # Run the manual startup script
-    ./manual_start_kme.sh
+    print_status "Press Enter to return to the main menu..."
+    read -r
 }
 
 # Function to install KME as a system service
