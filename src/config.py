@@ -17,9 +17,9 @@ class Settings:
         self.kme_id: str = os.getenv("KME_ID", "KME_LAB_001")
     
         # Certificate Configuration
-        self.kme_cert_path: str = os.getenv("KME_CERT_PATH", "./certs/kme_cert.pem")
-        self.kme_key_path: str = os.getenv("KME_KEY_PATH", "./certs/kme_key.pem")
-        self.ca_cert_path: str = os.getenv("CA_CERT_PATH", "./certs/ca_cert.pem")
+        self.kme_cert_path: str = os.getenv("KME_CERT_PATH", "./certs/kme/kme.crt")
+        self.kme_key_path: str = os.getenv("KME_KEY_PATH", "./certs/kme/kme.key")
+        self.ca_cert_path: str = os.getenv("CA_CERT_PATH", "./certs/ca/ca.crt")
     
         # Storage Configuration
         self.data_dir: str = os.getenv("DATA_DIR", "./data")
