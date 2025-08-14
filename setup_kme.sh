@@ -571,6 +571,112 @@ import_ca_certificate() {
     print_success "CA certificate imported and .env updated"
 }
 
+# Function to create KME CSR
+create_kme_csr() {
+    print_status "Creating KME Certificate Signing Request (CSR)..."
+    
+    echo ""
+    print_status "This will create a new private key and CSR for the KME server."
+    print_status "You can then submit the CSR to your CA for signing."
+    echo ""
+    
+    read -p "Enter KME server hostname (e.g., kme.example.com): " kme_hostname
+    
+    if [ -z "$kme_hostname" ]; then
+        print_error "Hostname is required"
+        return 1
+    fi
+    
+    read -p "Enter organization name (e.g., My Company): " org_name
+    
+    if [ -z "$org_name" ]; then
+        print_error "Organization name is required"
+        return 1
+    fi
+    
+    read -p "Enter organizational unit (e.g., IT Department): " org_unit
+    
+    if [ -z "$org_unit" ]; then
+        org_unit="Easy-KME Lab"
+    fi
+    
+    read -p "Enter country code (e.g., US): " country_code
+    
+    if [ -z "$country_code" ]; then
+        country_code="US"
+    fi
+    
+    read -p "Enter state/province (e.g., CA): " state
+    
+    if [ -z "$state" ]; then
+        state="TX"
+    fi
+    
+    read -p "Enter city/locality (e.g., San Francisco): " city
+    
+    if [ -z "$city" ]; then
+        city="Burnet"
+    fi
+    
+    # Create OpenSSL configuration for CSR
+    cat > certs/kme/csr.conf << EOF
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+req_extensions = v3_req
+
+[dn]
+C = $country_code
+ST = $state
+L = $city
+O = $org_name
+OU = $org_unit
+CN = $kme_hostname
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = $kme_hostname
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+EOF
+    
+    # Generate private key and CSR
+    openssl req -new -newkey rsa:2048 -keyout certs/kme/kme.key -out certs/kme/kme.csr -config certs/kme/csr.conf
+    
+    if [ $? -eq 0 ]; then
+        chmod 600 certs/kme/kme.key
+        chmod 644 certs/kme/kme.csr
+        
+        print_success "KME CSR created successfully!"
+        echo ""
+        print_status "Files created:"
+        echo "  Private key: certs/kme/kme.key"
+        echo "  CSR: certs/kme/kme.csr"
+        echo "  Config: certs/kme/csr.conf"
+        echo ""
+        print_status "Next steps:"
+        echo "  1. Submit certs/kme/kme.csr to your CA for signing"
+        echo "  2. Once you receive the signed certificate, place it as certs/kme/kme.crt"
+        echo "  3. Update your .env file with the certificate paths"
+        echo ""
+        
+        # Show CSR content
+        print_status "CSR content (submit this to your CA):"
+        echo "=========================================="
+        cat certs/kme/kme.csr
+        echo "=========================================="
+    else
+        print_error "Failed to create KME CSR"
+        return 1
+    fi
+}
+
 # Function to show certificate configuration submenu
 show_certificate_menu() {
     while true; do
@@ -590,6 +696,8 @@ show_certificate_menu() {
         
         if [ -f "certs/kme/kme.crt" ] && [ -f "certs/kme/kme.key" ]; then
             echo -e "  ${GREEN}✓${NC} KME Certificate"
+        elif [ -f "certs/kme/kme.csr" ] && [ -f "certs/kme/kme.key" ]; then
+            echo -e "  ${YELLOW}⚠${NC} KME CSR (pending signing)"
         else
             echo -e "  ${RED}✗${NC} KME Certificate"
         fi
@@ -605,7 +713,7 @@ show_certificate_menu() {
         echo "Options:"
         echo "  1) Import CA Certificate"
         echo "  2) Import KME Certificate (P12)"
-        echo "  3) Import SAE Certificates (P12)"
+        echo "  3) Create KME CSR"
         echo "  b) Back to Main Menu"
         echo "  q) Quit"
         echo ""
@@ -620,7 +728,7 @@ show_certificate_menu() {
                 import_kme_certificate
                 ;;
             3)
-                import_sae_certificates
+                create_kme_csr
                 ;;
             b|B)
                 return 0
@@ -639,33 +747,7 @@ show_certificate_menu() {
     done
 }
 
-# Function to import SAE certificates
-import_sae_certificates() {
-    print_status "Importing SAE certificates..."
-    
-    while true; do
-        read -p "Enter path to SAE P12 file (or 'done' to finish): " sae_p12_file
-        
-        if [ "$sae_p12_file" = "done" ]; then
-            break
-        fi
-        
-        if [ -z "$sae_p12_file" ]; then
-            continue
-        fi
-        
-        read -p "Enter SAE name (e.g., SAE_001): " sae_name
-        
-        if [ -z "$sae_name" ]; then
-            print_error "SAE name is required"
-            continue
-        fi
-        
-        extract_p12 "$sae_p12_file" "certs/sae" "$sae_name"
-    done
-    
-    print_success "SAE certificate import completed"
-}
+
 
 # Function to setup Nginx
 setup_nginx() {
