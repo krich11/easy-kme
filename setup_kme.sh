@@ -520,24 +520,84 @@ import_kme_certificate() {
     print_success "KME certificate imported and .env updated"
 }
 
+# Function to detect if input is a PEM certificate or filename
+is_pem_certificate() {
+    local input="$1"
+    
+    # Check if it looks like a PEM certificate (contains BEGIN and END markers)
+    if echo "$input" | grep -q "-----BEGIN CERTIFICATE-----" && echo "$input" | grep -q "-----END CERTIFICATE-----"; then
+        return 0  # It's a PEM certificate
+    else
+        return 1  # It's likely a filename
+    fi
+}
+
+# Function to validate PEM certificate content
+validate_pem_certificate() {
+    local pem_content="$1"
+    
+    # Check if it's a valid PEM certificate
+    if echo "$pem_content" | openssl x509 -noout -text >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Function to import CA certificate
 import_ca_certificate() {
     print_status "Importing CA certificate..."
     
-    read -p "Enter path to CA certificate file (PEM format): " ca_cert_file
+    echo ""
+    print_status "You can either:"
+    echo "  1. Paste the PEM certificate content directly"
+    echo "  2. Enter the path to a CA certificate file"
+    echo ""
+    print_status "The system will automatically detect which option you choose."
+    echo ""
     
-    if [ -z "$ca_cert_file" ]; then
+    read -p "Enter CA certificate (paste PEM or file path): " ca_cert_input
+    
+    if [ -z "$ca_cert_input" ]; then
         print_warning "No CA certificate specified, skipping CA import"
         return 0
     fi
     
-    if [ ! -f "$ca_cert_file" ]; then
-        print_error "CA certificate file not found: $ca_cert_file"
-        return 1
+    # Check if input is a PEM certificate or filename
+    if is_pem_certificate "$ca_cert_input"; then
+        print_status "Detected PEM certificate content"
+        
+        # Validate the PEM certificate
+        if validate_pem_certificate "$ca_cert_input"; then
+            # Write PEM content to file
+            echo "$ca_cert_input" > "certs/ca/ca.crt"
+            chmod 644 "certs/ca/ca.crt"
+            
+            print_success "PEM certificate validated and saved"
+        else
+            print_error "Invalid PEM certificate format"
+            return 1
+        fi
+    else
+        print_status "Detected file path: $ca_cert_input"
+        
+        # Check if file exists
+        if [ ! -f "$ca_cert_input" ]; then
+            print_error "CA certificate file not found: $ca_cert_input"
+            return 1
+        fi
+        
+        # Validate that the file contains a valid certificate
+        if validate_pem_certificate "$(cat "$ca_cert_input")"; then
+            cp "$ca_cert_input" "certs/ca/ca.crt"
+            chmod 644 "certs/ca/ca.crt"
+            
+            print_success "CA certificate file validated and copied"
+        else
+            print_error "File does not contain a valid PEM certificate"
+            return 1
+        fi
     fi
-    
-    cp "$ca_cert_file" "certs/ca/ca.crt"
-    chmod 644 "certs/ca/ca.crt"
     
     # Update .env file
     sed -i 's|CA_CERT_PATH=.*|CA_CERT_PATH=./certs/ca/ca.crt|' .env
