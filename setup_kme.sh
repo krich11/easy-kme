@@ -1075,7 +1075,7 @@ start_kme_manual() {
     echo "   source venv/bin/activate"
     echo ""
     echo "4. Start the KME server:"
-    echo "   python src/main.py"
+    echo "   python run.py"
     echo ""
     echo "5. The server will start on the configured host and port"
     echo "   (check .env file for KME_HOST and KME_PORT settings)"
@@ -1086,7 +1086,7 @@ start_kme_manual() {
     
     # Activate virtual environment and start server
     source venv/bin/activate
-    python src/main.py
+    python run.py
 }
 
 # Function to install KME as a system service
@@ -1120,7 +1120,7 @@ User=$current_user
 Group=$current_user
 WorkingDirectory=$current_dir
 Environment=PATH=$current_dir/venv/bin
-ExecStart=$current_dir/venv/bin/python $current_dir/src/main.py
+ExecStart=$current_dir/venv/bin/python $current_dir/run.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
