@@ -149,15 +149,26 @@ check_prerequisites() {
 install_prerequisites() {
     print_status "Installing missing prerequisites..."
     
+    echo ""
+    print_status "This step requires sudo privileges to install system packages."
+    print_status "You will be prompted for your password to install:"
+    echo "  - python3, python3-pip, python3-venv"
+    echo "  - git, openssl, nginx, curl, jq"
+    echo ""
+    
     if command_exists apt-get; then
         print_status "Using apt package manager"
+        print_status "Requesting sudo privileges to update package list..."
         sudo apt-get update
+        print_status "Requesting sudo privileges to install packages..."
         sudo apt-get install -y python3 python3-pip python3-venv git openssl nginx curl jq
     elif command_exists yum; then
         print_status "Using yum package manager"
+        print_status "Requesting sudo privileges to install packages..."
         sudo yum install -y python3 python3-pip git openssl nginx curl jq
     elif command_exists dnf; then
         print_status "Using dnf package manager"
+        print_status "Requesting sudo privileges to install packages..."
         sudo dnf install -y python3 python3-pip git openssl nginx curl jq
     else
         print_error "Unsupported package manager. Please install prerequisites manually."
@@ -753,21 +764,35 @@ setup_nginx() {
         return 1
     fi
     
+    echo ""
+    print_status "This step requires sudo privileges to configure Nginx system service."
+    print_status "You will be prompted for your password to:"
+    echo "  - Start/enable Nginx service"
+    echo "  - Copy configuration files to /etc/nginx/"
+    echo "  - Test and reload Nginx configuration"
+    echo ""
+    
     # Check if nginx is running
     if systemctl is-active --quiet nginx; then
         print_success "Nginx is running"
     else
         print_warning "Nginx is not running. Starting Nginx..."
+        print_status "Requesting sudo privileges to start Nginx service..."
         sudo systemctl start nginx
+        print_status "Requesting sudo privileges to enable Nginx service..."
         sudo systemctl enable nginx
     fi
     
     # Copy nginx configuration
+    print_status "Requesting sudo privileges to copy Nginx configuration..."
     sudo cp nginx.conf /etc/nginx/sites-available/easy-kme
+    print_status "Requesting sudo privileges to create Nginx site link..."
     sudo ln -sf /etc/nginx/sites-available/easy-kme /etc/nginx/sites-enabled/
     
     # Test nginx configuration
+    print_status "Requesting sudo privileges to test Nginx configuration..."
     if sudo nginx -t; then
+        print_status "Requesting sudo privileges to reload Nginx..."
         sudo systemctl reload nginx
         print_success "Nginx configuration updated"
     else
