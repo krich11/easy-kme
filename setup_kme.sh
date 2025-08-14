@@ -525,7 +525,7 @@ is_pem_certificate() {
     local input="$1"
     
     # Check if it looks like a PEM certificate (contains BEGIN and END markers)
-    if echo "$input" | grep -q "-----BEGIN CERTIFICATE-----" && echo "$input" | grep -q "-----END CERTIFICATE-----"; then
+    if echo "$input" | grep -q -- "-----BEGIN CERTIFICATE-----" && echo "$input" | grep -q -- "-----END CERTIFICATE-----"; then
         return 0  # It's a PEM certificate
     else
         return 1  # It's likely a filename
@@ -556,7 +556,30 @@ import_ca_certificate() {
     print_status "The system will automatically detect which option you choose."
     echo ""
     
+    echo ""
+    print_status "You can either:"
+    echo "  1. Paste the PEM certificate content directly"
+    echo "  2. Enter the path to a CA certificate file"
+    echo ""
+    
     read -p "Enter CA certificate (paste PEM or file path): " ca_cert_input
+    
+    if [ -z "$ca_cert_input" ]; then
+        print_warning "No CA certificate specified, skipping CA import"
+        return 0
+    fi
+    
+    # Check if input looks like a file path (doesn't start with -----BEGIN)
+    if [[ "$ca_cert_input" != -----BEGIN* ]]; then
+        # Treat as file path
+        if [ -f "$ca_cert_input" ]; then
+            print_status "Reading certificate from file: $ca_cert_input"
+            ca_cert_input=$(cat "$ca_cert_input")
+        else
+            print_error "File not found: $ca_cert_input"
+            return 1
+        fi
+    fi
     
     if [ -z "$ca_cert_input" ]; then
         print_warning "No CA certificate specified, skipping CA import"
