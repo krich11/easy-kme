@@ -702,12 +702,7 @@ show_certificate_menu() {
             echo -e "  ${RED}✗${NC} KME Certificate"
         fi
         
-        sae_count=$(find certs/sae -name "*.crt" 2>/dev/null | wc -l)
-        if [ "$sae_count" -gt 0 ]; then
-            echo -e "  ${GREEN}✓${NC} SAE Certificates ($sae_count found)"
-        else
-            echo -e "  ${RED}✗${NC} SAE Certificates"
-        fi
+
         
         echo ""
         echo "Options:"
@@ -820,13 +815,7 @@ verify_setup() {
         print_success "CA certificate exists"
     fi
     
-    # Check SAE certificates
-    sae_count=$(find certs/sae -name "*.crt" 2>/dev/null | wc -l)
-    if [ "$sae_count" -eq 0 ]; then
-        issues+=("No SAE certificates found")
-    else
-        print_success "Found $sae_count SAE certificate(s)"
-    fi
+
     
     # Check nginx configuration
     if [ ! -f "/etc/nginx/sites-enabled/easy-kme" ]; then
@@ -887,12 +876,7 @@ show_menu() {
         echo -e "  ${RED}✗${NC} CA Certificate"
     fi
     
-    sae_count=$(find certs/sae -name "*.crt" 2>/dev/null | wc -l)
-    if [ "$sae_count" -gt 0 ]; then
-        echo -e "  ${GREEN}✓${NC} SAE Certificates ($sae_count found)"
-    else
-        echo -e "  ${RED}✗${NC} SAE Certificates"
-    fi
+
     
     if [ -f "/etc/nginx/sites-enabled/easy-kme" ]; then
         echo -e "  ${GREEN}✓${NC} Nginx Configuration"
@@ -910,78 +894,12 @@ show_menu() {
     echo "  6) Setup Nginx Configuration"
     echo "  7) Verify Complete Setup"
     echo "  8) Run Complete Setup (All Steps)"
-    echo "  9) Troubleshoot Pip Performance"
-    echo "  10) Create Environment Configuration (Use Defaults)"
+    echo "  9) Create Environment Configuration (Use Defaults)"
     echo "  q) Quit"
     echo ""
 }
 
-# Function to troubleshoot pip performance
-troubleshoot_pip_performance() {
-    print_status "Troubleshooting pip performance issues..."
-    
-    echo ""
-    echo "=== Pip Performance Diagnostics ==="
-    
-    # Check pip version
-    if command_exists pip; then
-        pip_version=$(pip --version 2>/dev/null | cut -d' ' -f2)
-        print_status "Pip version: $pip_version"
-    else
-        print_error "Pip not found"
-    fi
-    
-    # Check Python version
-    if command_exists python3; then
-        python_version=$(python3 --version 2>&1)
-        print_status "Python version: $python_version"
-    fi
-    
-    # Check virtual environment
-    if [ -n "$VIRTUAL_ENV" ]; then
-        print_success "Virtual environment active: $VIRTUAL_ENV"
-    else
-        print_warning "No virtual environment active"
-    fi
-    
-    # Check network connectivity
-    print_status "Testing network connectivity to PyPI..."
-    if curl -s --connect-timeout 10 https://pypi.org/simple/ > /dev/null; then
-        print_success "PyPI connectivity: OK"
-    else
-        print_error "PyPI connectivity: FAILED"
-        print_warning "Check your internet connection or firewall settings"
-    fi
-    
-    # Check available memory
-    if command_exists free; then
-        available_mem=$(free -m | awk 'NR==2{printf "%.0f", $7}')
-        print_status "Available memory: ${available_mem}MB"
-        if [ "$available_mem" -lt 512 ]; then
-            print_warning "Low memory available. Consider closing other applications."
-        fi
-    fi
-    
-    # Check disk space
-    if command_exists df; then
-        available_space=$(df . | awk 'NR==2{printf "%.0f", $4}')
-        print_status "Available disk space: ${available_space}KB"
-        if [ "$available_space" -lt 1048576 ]; then  # Less than 1GB
-            print_warning "Low disk space available. Consider freeing up space."
-        fi
-    fi
-    
-    echo ""
-    echo "=== Performance Optimization Tips ==="
-    echo "1. Use a wired internet connection if possible"
-    echo "2. Close other applications to free up memory"
-    echo "3. Consider using a local PyPI mirror if available"
-    echo "4. The setup script now uses optimized pip flags"
-    echo "5. If installation is still slow, try running it overnight"
-    echo ""
-    
-    read -p "Press Enter to continue..."
-}
+
 
 # Function to run complete setup
 run_complete_setup() {
@@ -1068,9 +986,6 @@ while true; do
             run_complete_setup
             ;;
         9)
-            troubleshoot_pip_performance
-            ;;
-        10)
             create_env_file_defaults
             ;;
         q|Q)
