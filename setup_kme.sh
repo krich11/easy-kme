@@ -233,9 +233,15 @@ prompt_env_var() {
     local default_value="$2"
     local description="$3"
     local validation_func="$4"
+    local options="$5"
     
     echo ""
     print_status "$description"
+    
+    # Show available options if provided
+    if [ -n "$options" ]; then
+        echo "Options: $options"
+    fi
     
     while true; do
         read -p "Enter value for $var_name [$default_value]: " user_value
@@ -334,7 +340,7 @@ create_env_file() {
     # KME Server Configuration
     echo "# KME Server Configuration" >> "$temp_env_file"
     prompt_env_var "KME_HOST" "0.0.0.0" "KME server host address (0.0.0.0 for all interfaces)" >> "$temp_env_file"
-    prompt_env_var "KME_PORT" "8443" "KME server port number" "validate_port" >> "$temp_env_file"
+    prompt_env_var "KME_PORT" "8443" "KME server port number" "validate_port" "1-65535" >> "$temp_env_file"
     prompt_env_var "KME_ID" "KME_LAB_001" "KME server identifier" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
@@ -349,19 +355,19 @@ create_env_file() {
     echo "# Storage Configuration" >> "$temp_env_file"
     prompt_env_var "DATA_DIR" "./data" "Directory for storing key data" >> "$temp_env_file"
     prompt_env_var "KEY_POOL_SIZE" "1000" "Number of keys to maintain in pool" "validate_positive_int" >> "$temp_env_file"
-    prompt_env_var "KEY_SIZE" "256" "Size of generated keys in bits" "validate_positive_int" >> "$temp_env_file"
+    prompt_env_var "KEY_SIZE" "256" "Size of generated keys in bits" "validate_positive_int" "128, 256, 512, 1024, 2048" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Security Settings
     echo "# Security Settings" >> "$temp_env_file"
-    prompt_env_var "REQUIRE_CLIENT_CERT" "true" "Require client certificates for authentication" "validate_boolean" >> "$temp_env_file"
-    prompt_env_var "VERIFY_CA" "true" "Verify CA certificate" "validate_boolean" >> "$temp_env_file"
-    prompt_env_var "ALLOW_HEADER_AUTH" "false" "Allow header-based authentication" "validate_boolean" >> "$temp_env_file"
+    prompt_env_var "REQUIRE_CLIENT_CERT" "true" "Require client certificates for authentication" "validate_boolean" "true, false" >> "$temp_env_file"
+    prompt_env_var "VERIFY_CA" "true" "Verify CA certificate" "validate_boolean" "true, false" >> "$temp_env_file"
+    prompt_env_var "ALLOW_HEADER_AUTH" "false" "Allow header-based authentication" "validate_boolean" "true, false" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
     # Logging Configuration
     echo "# Logging Configuration" >> "$temp_env_file"
-    prompt_env_var "LOG_LEVEL" "INFO" "Logging level" "validate_log_level" >> "$temp_env_file"
+    prompt_env_var "LOG_LEVEL" "INFO" "Logging level" "validate_log_level" "DEBUG, INFO, WARNING, ERROR, CRITICAL" >> "$temp_env_file"
     prompt_env_var "LOG_FILE" "./logs/kme.log" "Path to log file" >> "$temp_env_file"
     echo "" >> "$temp_env_file"
     
