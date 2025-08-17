@@ -183,6 +183,9 @@ secrets.json
 *.log
 logs/
 
+# Runtime data directory (generated after setup and startup)
+data/
+
 # Temporary files
 *.tmp
 *.temp
