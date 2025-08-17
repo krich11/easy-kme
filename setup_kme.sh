@@ -600,8 +600,6 @@ import_ca_certificate() {
 
 # Function to detect network interfaces and IP addresses
 detect_network_interfaces() {
-    print_status "Detecting network interfaces and IP addresses..."
-    
     # Get all network interfaces with their IP addresses
     local interfaces=()
     local interface_info=()
@@ -622,10 +620,10 @@ detect_network_interfaces() {
                     fi
                 done < <(ip addr show "$interface_name" 2>/dev/null)
                 
-                # Get IPv6 addresses for this interface
+                # Get IPv6 addresses for this interface (skip link-local)
                 local ipv6_addrs=()
                 while IFS= read -r ip_line; do
-                    if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]]; then
+                    if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]] && [[ "${BASH_REMATCH[1]}" != fe80:* ]]; then
                         ipv6_addrs+=("${BASH_REMATCH[1]}")
                     fi
                 done < <(ip addr show "$interface_name" 2>/dev/null)
@@ -645,25 +643,23 @@ detect_network_interfaces() {
     
     # If no interfaces found, return default localhost
     if [ ${#interfaces[@]} -eq 0 ]; then
-        print_warning "No active network interfaces found, using localhost only"
         echo "127.0.0.1"
         echo "::1"
         return 0
     fi
     
-    # Display available interfaces
-    echo ""
-    print_status "Available network interfaces:"
-    for i in "${!interface_info[@]}"; do
-        echo "  $((i+1)). ${interface_info[$i]}"
-    done
-    echo ""
-    
     # If only one interface, use it automatically
     if [ ${#interfaces[@]} -eq 1 ]; then
-        print_status "Using single interface: ${interfaces[0]}"
-        local selected_interface="${interfaces[0]}"
+        local selected_interfaces=("${interfaces[@]}")
     else
+        # Display available interfaces
+        echo ""
+        print_status "Available network interfaces:"
+        for i in "${!interface_info[@]}"; do
+            echo "  $((i+1)). ${interface_info[$i]}"
+        done
+        echo ""
+        
         # Let user choose interface(s)
         echo "Select interface(s) to include in the certificate (comma-separated numbers, or 'all'):"
         read -p "Choice: " choice
@@ -695,15 +691,15 @@ detect_network_interfaces() {
             fi
         done < <(ip addr show "$interface" 2>/dev/null)
         
-        # Get IPv6 addresses
+        # Get IPv6 addresses (skip link-local)
         while IFS= read -r ip_line; do
-            if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]]; then
+            if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]] && [[ "${BASH_REMATCH[1]}" != fe80:* ]]; then
                 all_ipv6+=("${BASH_REMATCH[1]}")
             fi
         done < <(ip addr show "$interface" 2>/dev/null)
     done
     
-    # Remove duplicates and output
+    # Remove duplicates and output only valid IP addresses
     if [ ${#all_ipv4[@]} -gt 0 ]; then
         printf "%s\n" "${all_ipv4[@]}" | sort -u
     fi
@@ -777,9 +773,10 @@ create_kme_csr() {
     fi
     
     # Detect network interfaces and get IP addresses
+    print_status "Detecting network interfaces and IP addresses..."
     local ip_addresses=()
     while IFS= read -r ip; do
-        if [ -n "$ip" ]; then
+        if [ -n "$ip" ] && [[ "$ip" =~ ^[0-9a-fA-F:\.]+$ ]]; then
             ip_addresses+=("$ip")
         fi
     done < <(detect_network_interfaces)
