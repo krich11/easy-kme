@@ -598,6 +598,120 @@ import_ca_certificate() {
     print_success "CA certificate imported and .env updated"
 }
 
+# Function to detect network interfaces and IP addresses
+detect_network_interfaces() {
+    print_status "Detecting network interfaces and IP addresses..."
+    
+    # Get all network interfaces with their IP addresses
+    local interfaces=()
+    local interface_info=()
+    
+    # Use ip command to get interface information
+    while IFS= read -r line; do
+        if [[ $line =~ ^[0-9]+:[[:space:]]+([^:]+): ]]; then
+            interface_name="${BASH_REMATCH[1]}"
+            # Skip loopback and down interfaces
+            if [[ "$interface_name" != "lo" ]] && [[ "$(cat /sys/class/net/$interface_name/operstate 2>/dev/null)" == "up" ]]; then
+                interfaces+=("$interface_name")
+                
+                # Get IPv4 addresses for this interface
+                local ipv4_addrs=()
+                while IFS= read -r ip_line; do
+                    if [[ $ip_line =~ inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                        ipv4_addrs+=("${BASH_REMATCH[1]}")
+                    fi
+                done < <(ip addr show "$interface_name" 2>/dev/null)
+                
+                # Get IPv6 addresses for this interface
+                local ipv6_addrs=()
+                while IFS= read -r ip_line; do
+                    if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]]; then
+                        ipv6_addrs+=("${BASH_REMATCH[1]}")
+                    fi
+                done < <(ip addr show "$interface_name" 2>/dev/null)
+                
+                # Store interface info
+                local info="Interface: $interface_name"
+                if [ ${#ipv4_addrs[@]} -gt 0 ]; then
+                    info+=" | IPv4: ${ipv4_addrs[*]}"
+                fi
+                if [ ${#ipv6_addrs[@]} -gt 0 ]; then
+                    info+=" | IPv6: ${ipv6_addrs[*]}"
+                fi
+                interface_info+=("$info")
+            fi
+        fi
+    done < <(ip link show 2>/dev/null)
+    
+    # If no interfaces found, return default localhost
+    if [ ${#interfaces[@]} -eq 0 ]; then
+        print_warning "No active network interfaces found, using localhost only"
+        echo "127.0.0.1"
+        echo "::1"
+        return 0
+    fi
+    
+    # Display available interfaces
+    echo ""
+    print_status "Available network interfaces:"
+    for i in "${!interface_info[@]}"; do
+        echo "  $((i+1)). ${interface_info[$i]}"
+    done
+    echo ""
+    
+    # If only one interface, use it automatically
+    if [ ${#interfaces[@]} -eq 1 ]; then
+        print_status "Using single interface: ${interfaces[0]}"
+        local selected_interface="${interfaces[0]}"
+    else
+        # Let user choose interface(s)
+        echo "Select interface(s) to include in the certificate (comma-separated numbers, or 'all'):"
+        read -p "Choice: " choice
+        
+        if [[ "$choice" == "all" ]]; then
+            selected_interfaces=("${interfaces[@]}")
+        else
+            # Parse comma-separated choices
+            IFS=',' read -ra choices <<< "$choice"
+            selected_interfaces=()
+            for c in "${choices[@]}"; do
+                c=$(echo "$c" | tr -d ' ')
+                if [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 1 ] && [ "$c" -le ${#interfaces[@]} ]; then
+                    selected_interfaces+=("${interfaces[$((c-1))]}")
+                fi
+            done
+        fi
+    fi
+    
+    # Collect IP addresses from selected interfaces
+    local all_ipv4=()
+    local all_ipv6=()
+    
+    for interface in "${selected_interfaces[@]}"; do
+        # Get IPv4 addresses
+        while IFS= read -r ip_line; do
+            if [[ $ip_line =~ inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                all_ipv4+=("${BASH_REMATCH[1]}")
+            fi
+        done < <(ip addr show "$interface" 2>/dev/null)
+        
+        # Get IPv6 addresses
+        while IFS= read -r ip_line; do
+            if [[ $ip_line =~ inet6[[:space:]]+([0-9a-fA-F:]+) ]] && [[ "${BASH_REMATCH[1]}" != "::1" ]]; then
+                all_ipv6+=("${BASH_REMATCH[1]}")
+            fi
+        done < <(ip addr show "$interface" 2>/dev/null)
+    done
+    
+    # Remove duplicates and output
+    if [ ${#all_ipv4[@]} -gt 0 ]; then
+        printf "%s\n" "${all_ipv4[@]}" | sort -u
+    fi
+    if [ ${#all_ipv6[@]} -gt 0 ]; then
+        printf "%s\n" "${all_ipv6[@]}" | sort -u
+    fi
+}
+
 # Function to create KME CSR
 create_kme_csr() {
     print_status "Creating KME Certificate Signing Request (CSR)..."
@@ -607,11 +721,28 @@ create_kme_csr() {
     print_status "You can then submit the CSR to your CA for signing."
     echo ""
     
-    read -p "Enter KME server hostname (e.g., kme.example.com): " kme_hostname
+    # Get system hostname and FQDN
+    local system_hostname=$(hostname 2>/dev/null || echo "")
+    local system_fqdn=$(hostname -f 2>/dev/null || echo "")
+    
+    # Determine default hostname
+    local default_hostname=""
+    if [ -n "$system_fqdn" ] && [ "$system_fqdn" != "$system_hostname" ]; then
+        default_hostname="$system_fqdn"
+        print_status "Detected system FQDN: $system_fqdn"
+    elif [ -n "$system_hostname" ]; then
+        default_hostname="$system_hostname"
+        print_status "Detected system hostname: $system_hostname"
+    else
+        default_hostname="kme.example.com"
+        print_warning "Could not detect system hostname, using default"
+    fi
+    
+    read -p "Enter KME server hostname [$default_hostname]: " kme_hostname
     
     if [ -z "$kme_hostname" ]; then
-        print_error "Hostname is required"
-        return 1
+        kme_hostname="$default_hostname"
+        print_status "Using detected hostname: $kme_hostname"
     fi
     
     read -p "Enter organization name (e.g., My Company): " org_name
@@ -645,6 +776,26 @@ create_kme_csr() {
         city="Burnet"
     fi
     
+    # Detect network interfaces and get IP addresses
+    local ip_addresses=()
+    while IFS= read -r ip; do
+        if [ -n "$ip" ]; then
+            ip_addresses+=("$ip")
+        fi
+    done < <(detect_network_interfaces)
+    
+    # Always include localhost
+    ip_addresses+=("127.0.0.1" "::1")
+    
+    # Remove duplicates
+    ip_addresses=($(printf "%s\n" "${ip_addresses[@]}" | sort -u))
+    
+    print_status "IP addresses to include in certificate:"
+    for ip in "${ip_addresses[@]}"; do
+        echo "  - $ip"
+    done
+    echo ""
+    
     # Create OpenSSL configuration for CSR
     cat > certs/kme/csr.conf << EOF
 [req]
@@ -670,8 +821,14 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = $kme_hostname
 DNS.2 = localhost
-IP.1 = 127.0.0.1
 EOF
+    
+    # Add IP addresses to the configuration
+    local ip_counter=1
+    for ip in "${ip_addresses[@]}"; do
+        echo "IP.$ip_counter = $ip" >> certs/kme/csr.conf
+        ((ip_counter++))
+    done
     
     # Generate private key and CSR (unencrypted key for lab use)
     openssl req -new -newkey rsa:2048 -nodes -keyout certs/kme/kme.key -out certs/kme/kme.csr -config certs/kme/csr.conf
