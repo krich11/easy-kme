@@ -44,6 +44,9 @@ class Settings:
         self.key_max_size: int = int(os.getenv("KEY_MAX_SIZE", "1024"))
         self.key_min_size: int = int(os.getenv("KEY_MIN_SIZE", "8"))
         self.max_sae_id_count: int = int(os.getenv("MAX_SAE_ID_COUNT", "8"))
+        
+        # Certificate extension configuration
+        self.include_certificate_extension: bool = os.getenv("INCLUDE_CERTIFICATE_EXTENSION", "true").lower() == "true"
     
         # Validate and normalize
         self._validate()

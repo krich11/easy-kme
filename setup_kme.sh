@@ -435,6 +435,11 @@ create_env_file() {
     echo "# API Configuration" >> "$temp_env_file"
     prompt_env_var "API_VERSION" "v1" "API version" "" "" ".env" >> "$temp_env_file"
     prompt_env_var "API_PREFIX" "/api" "API URL prefix" "" "" ".env" >> "$temp_env_file"
+    echo "" >> "$temp_env_file"
+    
+    # Certificate Extension Configuration
+    echo "# Certificate Extension Configuration" >> "$temp_env_file"
+    prompt_env_var "INCLUDE_CERTIFICATE_EXTENSION" "true" "Include certificate extension in API responses" "validate_boolean" "true, false" ".env" >> "$temp_env_file"
     
     # Move temporary file to .env
     mv "$temp_env_file" ".env"
@@ -484,6 +489,9 @@ LOG_FILE=./logs/kme.log
 # API Configuration
 API_VERSION=v1
 API_PREFIX=/api
+
+# Certificate Extension Configuration
+INCLUDE_CERTIFICATE_EXTENSION=true
 EOF
     
     print_success ".env file created with default values"

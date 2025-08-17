@@ -50,8 +50,10 @@ async def get_status(slave_sae_id: str, request: Request):
 
         available_keys = status_data.get("available_keys", 0)
 
-        # Create certificate extension
-        cert_extension = middleware.create_certificate_extension(request, master_sae_id)
+        # Create certificate extension (if enabled)
+        cert_extension = None
+        if settings.include_certificate_extension:
+            cert_extension = middleware.create_certificate_extension(request, master_sae_id)
 
         return StatusSpec(
             source_KME_ID=settings.kme_id,
@@ -65,7 +67,7 @@ async def get_status(slave_sae_id: str, request: Request):
             max_key_size=getattr(settings, "key_max_size", settings.key_size),
             min_key_size=getattr(settings, "key_min_size", 8),
             max_SAE_ID_count=getattr(settings, "max_sae_id_count", 0),
-            easy_kme_easy_kme_certificate_extension=cert_extension
+            easy_kme_certificate_extension=cert_extension
         )
         
     except HTTPException:
@@ -135,8 +137,10 @@ async def get_key(
         if not key_container:
             raise HTTPException(status_code=503, detail="Failed to generate keys")
         
-        # Create certificate extension
-        cert_extension = middleware.create_certificate_extension(request, master_sae_id)
+        # Create certificate extension (if enabled)
+        cert_extension = None
+        if key_service.settings.include_certificate_extension:
+            cert_extension = middleware.create_certificate_extension(request, master_sae_id)
         
         # Map internal response to spec container
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
@@ -193,8 +197,10 @@ async def get_key_with_key_ids(
         if not key_container:
             raise HTTPException(status_code=503, detail="Failed to retrieve keys")
         
-        # Create certificate extension
-        cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
+        # Create certificate extension (if enabled)
+        cert_extension = None
+        if key_service.settings.include_certificate_extension:
+            cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
         return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
@@ -227,8 +233,10 @@ async def get_key_get(slave_sae_id: str, request: Request, number: Optional[int]
         if not key_container:
             raise HTTPException(status_code=503, detail="Failed to generate keys")
         
-        # Create certificate extension
-        cert_extension = middleware.create_certificate_extension(request, master_sae_id)
+        # Create certificate extension (if enabled)
+        cert_extension = None
+        if key_service.settings.include_certificate_extension:
+            cert_extension = middleware.create_certificate_extension(request, master_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
         return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
@@ -256,8 +264,10 @@ async def get_key_with_key_ids_get(master_sae_id: str, request: Request, key_ID:
         if not key_container:
             raise HTTPException(status_code=503, detail="Failed to retrieve keys")
         
-        # Create certificate extension
-        cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
+        # Create certificate extension (if enabled)
+        cert_extension = None
+        if key_service.settings.include_certificate_extension:
+            cert_extension = middleware.create_certificate_extension(request, slave_sae_id)
         
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
         return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
