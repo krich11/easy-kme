@@ -701,9 +701,12 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285087",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ]
   },
   {
     "key_id": "ee20a585-b0c7-419a-be00-93fae6450fe1",
@@ -711,9 +714,12 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285102",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ]
   },
   {
     "key_id": "0ce41cc6-c36d-4356-aec0-ad33501b855b",
@@ -721,9 +727,11 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285118",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ]
   },
   {
     "key_id": "5c0d1f00-5c3d-4a84-b292-c9d5159c2443",
@@ -731,9 +739,12 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285139",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ]
   },
   {
     "key_id": "e9f26156-ea0a-41e6-986e-4590e75d1b7b",
@@ -741,9 +752,12 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285154",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ]
   },
   {
     "key_id": "d631a513-1a56-4146-bad0-700b0c1650c6",
@@ -751,9 +765,11 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285169",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ]
   },
   {
     "key_id": "3bf43544-edd1-42df-9409-1eac17e3478d",
@@ -761,9 +777,11 @@
     "key_size": 256,
     "created_at": "2025-08-08 13:49:52.285184",
     "expires_at": null,
-    "is_used": false,
-    "master_sae_id": null,
-    "slave_sae_ids": []
+    "is_used": true,
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ]
   },
   {
     "key_id": "371950bd-028b-4b4b-9e2b-7327970250ae",

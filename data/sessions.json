@@ -520,5 +520,74 @@
     "created_at": "2025-08-10 23:12:59.424766",
     "expires_at": null,
     "is_active": true
+  },
+  {
+    "session_id": "e0565cc0-3cb4-4ce2-930f-77b13357f8f8",
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ],
+    "key_ids": [
+      "b5ab58b9-fc64-466e-a296-af5706c8dd26",
+      "ee20a585-b0c7-419a-be00-93fae6450fe1"
+    ],
+    "created_at": "2025-08-17 21:12:19.516448",
+    "expires_at": null,
+    "is_active": true
+  },
+  {
+    "session_id": "007ba4ec-689e-47c3-89c9-545e358ebaf8",
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ],
+    "key_ids": [
+      "0ce41cc6-c36d-4356-aec0-ad33501b855b"
+    ],
+    "created_at": "2025-08-17 21:12:19.622687",
+    "expires_at": null,
+    "is_active": true
+  },
+  {
+    "session_id": "2be05812-a983-4eed-b3cc-ca70c927f493",
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002",
+      "SAE_003"
+    ],
+    "key_ids": [
+      "5c0d1f00-5c3d-4a84-b292-c9d5159c2443",
+      "e9f26156-ea0a-41e6-986e-4590e75d1b7b"
+    ],
+    "created_at": "2025-08-17 21:13:03.880707",
+    "expires_at": null,
+    "is_active": true
+  },
+  {
+    "session_id": "11ccb9a3-fe04-4037-a0c3-a16de77075ff",
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ],
+    "key_ids": [
+      "d631a513-1a56-4146-bad0-700b0c1650c6"
+    ],
+    "created_at": "2025-08-17 21:13:03.987860",
+    "expires_at": null,
+    "is_active": true
+  },
+  {
+    "session_id": "b32fb1e2-9414-43cd-adba-5e15f5aa001e",
+    "master_sae_id": "SAE_001",
+    "slave_sae_ids": [
+      "SAE_002"
+    ],
+    "key_ids": [
+      "3bf43544-edd1-42df-9409-1eac17e3478d"
+    ],
+    "created_at": "2025-08-17 21:13:04.069757",
+    "expires_at": null,
+    "is_active": true
   }
 ]

@@ -100,6 +100,24 @@ async def get_key(
         if not slave_sae_id:
             raise HTTPException(status_code=400, detail="Slave SAE ID is required")
         
+        # Validate key size is multiple of 8 (ETSI requirement)
+        if key_request.size is not None and key_request.size % 8 != 0:
+            raise HTTPException(status_code=400, detail="size shall be a multiple of 8")
+        
+        # Handle extension_mandatory (ETSI requirement)
+        if key_request.extension_mandatory:
+            # For now, we don't support any mandatory extensions
+            # In a real implementation, you would check against supported extensions
+            raise HTTPException(
+                status_code=400, 
+                detail="not all extension_mandatory parameters are supported"
+            )
+        
+        # Handle extension_optional (ETSI requirement)
+        # We can ignore these for now, but in a real implementation you might process them
+        if key_request.extension_optional:
+            logger.info(f"Ignoring extension_optional parameters: {key_request.extension_optional}")
+        
         # Map spec request to internal model
         internal_request = KeyRequest(
             number=key_request.number or 1,
@@ -122,7 +140,7 @@ async def get_key(
         
         # Map internal response to spec container
         spec_keys = [SpecKey(key_ID=k.key_id, key=k.key_material) for k in key_container.keys]
-        return SpecKeyContainer(keys=spec_keys, easy_kme_easy_kme_certificate_extension=cert_extension)
+        return SpecKeyContainer(keys=spec_keys, easy_kme_certificate_extension=cert_extension)
         
     except HTTPException:
         raise
@@ -192,6 +210,11 @@ async def get_key_get(slave_sae_id: str, request: Request, number: Optional[int]
     """GET variant for simple cases: number and/or size query params."""
     try:
         master_sae_id = middleware.authenticate_client(request)
+        
+        # Validate key size is multiple of 8 (ETSI requirement)
+        if size is not None and size % 8 != 0:
+            raise HTTPException(status_code=400, detail="size shall be a multiple of 8")
+        
         internal_request = KeyRequest(
             number=number or 1,
             size=size or key_service.settings.key_size,
