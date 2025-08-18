@@ -80,13 +80,13 @@ async def log_api_requests(request: Request, call_next):
     settings = get_settings()
     
     if settings.log_level == "DEBUG":
-        # Log request details (but don't consume the body)
+        # Log request details
         logger.debug(f"=== API REQUEST ===")
         logger.debug(f"Method: {request.method}")
         logger.debug(f"URL: {request.url}")
         logger.debug(f"Headers: {dict(request.headers)}")
         
-        # Process the request (let FastAPI handle body parsing)
+        # Process the request
         response = await call_next(request)
         
         # Log response details

@@ -102,6 +102,7 @@ async def get_key(
         logger.debug(f"=== ENC_KEYS REQUEST VALIDATION ===")
         logger.debug(f"Request body: {key_request.dict()}")
         logger.debug(f"Request fields: {list(key_request.dict().keys())}")
+        logger.debug(f"Request JSON payload: {key_request.model_dump_json(indent=2)}")
         
         # Validate that required ETSI fields are present (ETSI spec says these are optional with defaults)
         # We'll use defaults if not provided, but we should validate the values if they are provided
