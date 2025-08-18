@@ -17,10 +17,38 @@ from .api.routes import router
 load_dotenv()
 
 # Configure logging
+settings = get_settings()
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+
+# Create logs directory if it doesn't exist
+import os
+os.makedirs('logs', exist_ok=True)
+
+# Configure logging handlers
+handlers = []
+
+# Console handler (always present)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(log_level)
+console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+handlers.append(console_handler)
+
+# File handler for debug logs (only when log level is DEBUG)
+if log_level == logging.DEBUG:
+    file_handler = logging.FileHandler('logs/debug.log')
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    handlers.append(file_handler)
+
+# Configure root logger
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=handlers
 )
+
 logger = logging.getLogger(__name__)
 
 # Create FastAPI application
