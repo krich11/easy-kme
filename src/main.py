@@ -80,28 +80,13 @@ async def log_api_requests(request: Request, call_next):
     settings = get_settings()
     
     if settings.log_level == "DEBUG":
-        # Log request details
+        # Log request details (but don't consume the body)
         logger.debug(f"=== API REQUEST ===")
         logger.debug(f"Method: {request.method}")
         logger.debug(f"URL: {request.url}")
         logger.debug(f"Headers: {dict(request.headers)}")
         
-        # Log request body for POST/PUT requests
-        if request.method in ["POST", "PUT", "PATCH"]:
-            try:
-                body = await request.body()
-                if body:
-                    # Try to parse as JSON
-                    try:
-                        import json
-                        json_body = json.loads(body.decode('utf-8'))
-                        logger.debug(f"Request Body (JSON): {json.dumps(json_body, indent=2)}")
-                    except json.JSONDecodeError:
-                        logger.debug(f"Request Body (raw): {body.decode('utf-8')}")
-            except Exception as e:
-                logger.debug(f"Error reading request body: {e}")
-        
-        # Process the request
+        # Process the request (let FastAPI handle body parsing)
         response = await call_next(request)
         
         # Log response details
