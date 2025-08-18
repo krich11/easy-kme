@@ -201,13 +201,26 @@ async def get_key_with_key_ids(
         # Authenticate client
         slave_sae_id = middleware.authenticate_client(request)
         
+        # Log the incoming request for debugging
+        logger.debug(f"=== DEC_KEYS REQUEST VALIDATION ===")
+        logger.debug(f"Request body: {key_ids.dict()}")
+        logger.debug(f"Request fields: {list(key_ids.dict().keys())}")
+        logger.debug(f"Request JSON payload: {key_ids.model_dump_json(indent=2)}")
+        
         # Validate master SAE ID
         if not master_sae_id:
             raise HTTPException(status_code=400, detail="Master SAE ID is required")
         
         # Validate key IDs
         if not key_ids.key_IDs:
+            logger.warning(f"Empty key_IDs array in request: {key_ids.dict()}")
             raise HTTPException(status_code=400, detail="Key IDs are required")
+        
+        # Validate key ID structure
+        for i, key_ref in enumerate(key_ids.key_IDs):
+            if not key_ref.key_ID:
+                logger.warning(f"Empty key_ID at index {i} in request: {key_ids.dict()}")
+                raise HTTPException(status_code=400, detail=f"Key ID at index {i} is empty")
         
         # Check authorization
         key_id_list = [ref.key_ID for ref in key_ids.key_IDs]
