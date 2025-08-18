@@ -98,6 +98,31 @@ async def get_key(
         # Authenticate client
         master_sae_id = middleware.authenticate_client(request)
         
+        # Log the incoming request for debugging
+        logger.debug(f"=== ENC_KEYS REQUEST VALIDATION ===")
+        logger.debug(f"Request body: {key_request.dict()}")
+        logger.debug(f"Request fields: {list(key_request.dict().keys())}")
+        
+        # Validate that required ETSI fields are present
+        if key_request.number is None:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'number' field is mandatory")
+        
+        if key_request.size is None:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'size' field is mandatory")
+        
+        # Validate that no non-ETSI fields are present
+        allowed_fields = {'number', 'size', 'additional_slave_SAE_IDs', 'extension_mandatory', 'extension_optional'}
+        received_fields = set(key_request.dict().keys())
+        invalid_fields = received_fields - allowed_fields
+        
+        if invalid_fields:
+            logger.warning(f"Invalid fields in request: {invalid_fields}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"ETSI GS QKD 014: Invalid fields detected: {list(invalid_fields)}. "
+                       f"Valid fields are: {list(allowed_fields)}"
+            )
+        
         # Validate slave SAE ID
         if not slave_sae_id:
             raise HTTPException(status_code=400, detail="Slave SAE ID is required")
@@ -216,6 +241,18 @@ async def get_key_get(slave_sae_id: str, request: Request, number: Optional[int]
     """GET variant for simple cases: number and/or size query params."""
     try:
         master_sae_id = middleware.authenticate_client(request)
+        
+        # Log the incoming request for debugging
+        logger.debug(f"=== ENC_KEYS GET REQUEST VALIDATION ===")
+        logger.debug(f"Query parameters: number={number}, size={size}")
+        
+        # Validate that required ETSI fields are present (for GET, we use defaults if not provided)
+        # This is less strict than POST since GET is meant for simple cases
+        if number is not None and number < 1:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'number' must be >= 1")
+        
+        if size is not None and size < 8:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'size' must be >= 8")
         
         # Validate key size is multiple of 8 (ETSI requirement)
         if size is not None and size % 8 != 0:
