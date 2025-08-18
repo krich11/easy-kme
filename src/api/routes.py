@@ -103,12 +103,13 @@ async def get_key(
         logger.debug(f"Request body: {key_request.dict()}")
         logger.debug(f"Request fields: {list(key_request.dict().keys())}")
         
-        # Validate that required ETSI fields are present
-        if key_request.number is None:
-            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'number' field is mandatory")
+        # Validate that required ETSI fields are present (ETSI spec says these are optional with defaults)
+        # We'll use defaults if not provided, but we should validate the values if they are provided
+        if key_request.number is not None and key_request.number < 1:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'number' must be >= 1")
         
-        if key_request.size is None:
-            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'size' field is mandatory")
+        if key_request.size is not None and key_request.size < 8:
+            raise HTTPException(status_code=400, detail="ETSI GS QKD 014: 'size' must be >= 8")
         
         # Validate that no non-ETSI fields are present
         allowed_fields = {'number', 'size', 'additional_slave_SAE_IDs', 'extension_mandatory', 'extension_optional'}
