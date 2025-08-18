@@ -1277,6 +1277,7 @@ User=$current_user
 Group=$current_user
 WorkingDirectory=$current_dir
 Environment=PATH=$current_dir/venv/bin
+EnvironmentFile=$current_dir/.env
 ExecStart=$current_dir/venv/bin/python $current_dir/run.py
 Restart=always
 RestartSec=10
