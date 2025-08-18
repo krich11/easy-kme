@@ -62,11 +62,11 @@ async def get_status(slave_sae_id: str, request: Request):
             slave_SAE_ID=slave_sae_id,
             key_size=settings.key_size,
             stored_key_count=available_keys,
-            max_key_count=status_data.get("max_key_pool_size", 0),
-            max_key_per_request=getattr(settings, "max_key_per_request", 128),
-            max_key_size=getattr(settings, "key_max_size", settings.key_size),
-            min_key_size=getattr(settings, "key_min_size", 8),
-            max_SAE_ID_count=getattr(settings, "max_sae_id_count", 0),
+            max_key_count=status_data.get("max_key_pool_size", settings.key_pool_size),
+            max_key_per_request=settings.max_key_per_request,
+            max_key_size=settings.key_max_size,
+            min_key_size=settings.key_min_size,
+            max_SAE_ID_count=settings.max_sae_id_count,
             easy_kme_certificate_extension=cert_extension
         )
         
