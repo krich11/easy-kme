@@ -3,26 +3,25 @@ Easy-KME Server - ETSI GS QKD 014 Key Management Entity
 Main application entry point.
 """
 
+# Load environment variables from .env file FIRST
+from dotenv import load_dotenv
+load_dotenv()
+
 import logging
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from fastapi import Request
 
 from .config import get_settings
 from .api.routes import router
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Configure logging
-settings = get_settings()
-log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
-
-# Create logs directory if it doesn't exist
 import os
 os.makedirs('logs', exist_ok=True)
+
+# Get settings for logging configuration
+settings = get_settings()
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 
 # Configure logging handlers
 handlers = []
@@ -51,6 +50,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Log debug mode status immediately after configuration
+if log_level == logging.DEBUG:
+    logger.debug("DEBUG MODE: KME logging configured in debug mode")
+    logger.debug(f"Debug logs will be written to: {os.path.abspath('logs/debug.log')}")
+
 # Create FastAPI application
 app = FastAPI(
     title="Easy-KME",
@@ -69,6 +73,70 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add API logging middleware for debug mode
+@app.middleware("http")
+async def log_api_requests(request: Request, call_next):
+    """Log API requests and responses in debug mode."""
+    settings = get_settings()
+    
+    if settings.log_level == "DEBUG":
+        # Log request details
+        logger.debug(f"=== API REQUEST ===")
+        logger.debug(f"Method: {request.method}")
+        logger.debug(f"URL: {request.url}")
+        logger.debug(f"Headers: {dict(request.headers)}")
+        
+        # Log request body for POST/PUT requests
+        if request.method in ["POST", "PUT", "PATCH"]:
+            try:
+                body = await request.body()
+                if body:
+                    # Try to parse as JSON
+                    try:
+                        import json
+                        json_body = json.loads(body.decode('utf-8'))
+                        logger.debug(f"Request Body (JSON): {json.dumps(json_body, indent=2)}")
+                    except json.JSONDecodeError:
+                        logger.debug(f"Request Body (raw): {body.decode('utf-8')}")
+            except Exception as e:
+                logger.debug(f"Error reading request body: {e}")
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Log response details
+        logger.debug(f"=== API RESPONSE ===")
+        logger.debug(f"Status Code: {response.status_code}")
+        logger.debug(f"Response Headers: {dict(response.headers)}")
+        
+        # Log response body
+        try:
+            response_body = b""
+            async for chunk in response.body_iterator:
+                response_body += chunk
+            
+            # Try to parse as JSON
+            try:
+                import json
+                json_response = json.loads(response_body.decode('utf-8'))
+                logger.debug(f"Response Body (JSON): {json.dumps(json_response, indent=2)}")
+            except json.JSONDecodeError:
+                logger.debug(f"Response Body (raw): {response_body.decode('utf-8')}")
+            
+            # Create new response with the body
+            return Response(
+                content=response_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type
+            )
+        except Exception as e:
+            logger.debug(f"Error reading response body: {e}")
+            return response
+    else:
+        # Not in debug mode, just pass through
+        return await call_next(request)
+
 # Include API routes
 app.include_router(router)
 
@@ -79,6 +147,11 @@ async def startup_event():
     settings = get_settings()
     logger.info(f"Starting Easy-KME server on {settings.kme_host}:8000")
     logger.info(f"KME ID: {settings.kme_id}")
+    
+    # Log debug mode status
+    if settings.log_level == "DEBUG":
+        logger.debug("DEBUG MODE: KME is running in debug mode - detailed logging enabled")
+        logger.debug(f"Debug logs will be written to: {os.path.abspath('logs/debug.log')}")
 
 
 @app.on_event("shutdown")
